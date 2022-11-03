@@ -1,6 +1,5 @@
-package de.davidrival.hardware;
+package de.davidrival.softstep.hardware;
 
-import de.davidrival.hardware.standalone.Softstep1PadStandalone;
 import lombok.Getter;
 import lombok.Setter;
 

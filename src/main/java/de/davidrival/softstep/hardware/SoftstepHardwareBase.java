@@ -1,16 +1,19 @@
-package de.davidrival.hardware;
+package de.davidrival.softstep.hardware;
 
 import com.bitwig.extension.controller.api.MidiOut;
+import de.davidrival.softstep.controller.Pages;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 @Getter
 @Setter
 @Builder
 @AllArgsConstructor
-public class SoftstepBase {
+public class SoftstepHardwareBase {
 
     private final MidiOut midiOut;
 
@@ -51,7 +54,7 @@ public class SoftstepBase {
     public void resetLeds() {
         for( int l= 0; l<10; l++) {
             for( int c=0; c<3; c++) {
-                setLed(l,c,Led.OFF.data2ForLed);
+                setLed(l,c, LedFlashing.OFF.data2ForLed);
             }
         }
     }
@@ -74,4 +77,5 @@ public class SoftstepBase {
             midiOut.sendMidi(176,50+i,cc);
         }
     }
+
 }

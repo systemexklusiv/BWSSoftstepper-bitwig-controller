@@ -1,4 +1,4 @@
-package de.davidrival;
+package de.davidrival.softstep;
 import java.util.UUID;
 
 import com.bitwig.extension.api.PlatformType;

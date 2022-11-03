@@ -1,11 +1,13 @@
-package de.davidrival;
+package de.davidrival.softstep;
 
 import com.bitwig.extension.api.util.midi.ShortMidiMessage;
 import com.bitwig.extension.callback.ShortMidiMessageReceivedCallback;
 import com.bitwig.extension.controller.api.*;
 import com.bitwig.extension.controller.ControllerExtension;
-import de.davidrival.hardware.Softstep1;
-import de.davidrival.hardware.SoftstepBase;
+import de.davidrival.softstep.controller.Pages;
+import de.davidrival.softstep.controller.SoftstepController;
+import de.davidrival.softstep.hardware.SoftstepHardware;
+import de.davidrival.softstep.hardware.SoftstepHardwareBase;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,7 +24,7 @@ public class SoftstepperExtension extends ControllerExtension
    static final int CHANNEL = 0;
    HardwareSurface hardwareSurface;
 
-   SoftstepBase softstepBase;
+   SoftstepHardwareBase softstepBase;
 
    protected SoftstepperExtension(final SoftstepperExtensionDefinition definition, final ControllerHost host)
    {
@@ -41,15 +43,10 @@ public class SoftstepperExtension extends ControllerExtension
       midiIn.setMidiCallback((ShortMidiMessageReceivedCallback) this::onMidi0);
       midiIn.setSysexCallback(this::onSysex0);
 
-      SoftstepBase softstepBase = new SoftstepBase(midiOut);
+      SoftstepHardware softstepHardware = new SoftstepHardware(midiOut);
+      SoftstepController softstepController = new SoftstepController(Pages.CTRL, softstepHardware);
 
-      softstepBase.init();
-      softstepBase.setLed(0, 1,1);
-      softstepBase.setLed(4, 0,2);
-      softstepBase.setLed(6, 1,3);
-      softstepBase.displayText("hello");
-      softstepBase.resetLeds();
-
+      softstepController.display();
 
       host.showPopupNotification("BWSSoftstepper Initialized");
       getHost().println("BWSSoftstepper Initialized!");

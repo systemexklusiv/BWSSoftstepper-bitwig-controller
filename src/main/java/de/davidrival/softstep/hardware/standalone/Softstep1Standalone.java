@@ -1,4 +1,4 @@
-package de.davidrival.hardware.standalone;
+package de.davidrival.softstep.hardware.standalone;
 
 import lombok.Getter;
 import lombok.Setter;

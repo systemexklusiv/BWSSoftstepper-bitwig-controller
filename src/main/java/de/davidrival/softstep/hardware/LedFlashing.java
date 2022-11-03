@@ -1,9 +1,9 @@
-package de.davidrival.hardware;
+package de.davidrival.softstep.hardware;
 
 import lombok.AllArgsConstructor;
 
 @AllArgsConstructor
-public enum Led {
+public enum LedFlashing {
     OFF(0),
     ON(1),
     BLINK(2),

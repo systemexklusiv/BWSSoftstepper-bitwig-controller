@@ -2,4 +2,6 @@ G:\_googleDrive\systemexklusiv\BITWIG\my_Bitwig_Controller_Scripts\_extensions\B
 G:\_googleDrive\systemexklusiv\BITWIG\my_Bitwig_Controller_Scripts\_extensions\BWSSoftstepper\src\main\java\de\davidrival\SoftstepperExtension.java
 G:\_googleDrive\systemexklusiv\BITWIG\my_Bitwig_Controller_Scripts\_extensions\BWSSoftstepper\src\main\java\de\davidrival\SoftstepperExtensionDefinition.java
 G:\_googleDrive\systemexklusiv\BITWIG\my_Bitwig_Controller_Scripts\_extensions\BWSSoftstepper\src\main\java\de\davidrival\hardware\standalone\Softstep1Standalone.java
+G:\_googleDrive\systemexklusiv\BITWIG\my_Bitwig_Controller_Scripts\_extensions\BWSSoftstepper\src\main\java\de\davidrival\hardware\SoftstepBase.java
 G:\_googleDrive\systemexklusiv\BITWIG\my_Bitwig_Controller_Scripts\_extensions\BWSSoftstepper\src\main\java\de\davidrival\hardware\standalone\Softstep1PadStandalone.java
+G:\_googleDrive\systemexklusiv\BITWIG\my_Bitwig_Controller_Scripts\_extensions\BWSSoftstepper\src\main\java\de\davidrival\hardware\Led.java

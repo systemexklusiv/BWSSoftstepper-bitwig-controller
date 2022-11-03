@@ -5,6 +5,7 @@ import com.bitwig.extension.callback.ShortMidiMessageReceivedCallback;
 import com.bitwig.extension.controller.api.*;
 import com.bitwig.extension.controller.ControllerExtension;
 import de.davidrival.hardware.Softstep1;
+import de.davidrival.hardware.SoftstepBase;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,7 +22,7 @@ public class SoftstepperExtension extends ControllerExtension
    static final int CHANNEL = 0;
    HardwareSurface hardwareSurface;
 
-   Softstep1 sstep = new Softstep1();
+   SoftstepBase softstepBase;
 
    protected SoftstepperExtension(final SoftstepperExtensionDefinition definition, final ControllerHost host)
    {
@@ -40,6 +41,16 @@ public class SoftstepperExtension extends ControllerExtension
       midiIn.setMidiCallback((ShortMidiMessageReceivedCallback) this::onMidi0);
       midiIn.setSysexCallback(this::onSysex0);
 
+      SoftstepBase softstepBase = new SoftstepBase(midiOut);
+
+      softstepBase.init();
+      softstepBase.setLed(0, 1,1);
+      softstepBase.setLed(4, 0,2);
+      softstepBase.setLed(6, 1,3);
+      softstepBase.displayText("hello");
+      softstepBase.resetLeds();
+
+
       host.showPopupNotification("BWSSoftstepper Initialized");
       getHost().println("BWSSoftstepper Initialized!");
    }
@@ -50,6 +61,9 @@ public class SoftstepperExtension extends ControllerExtension
    {
       // TODO: Perform any cleanup once the driver exits
       // For now just show a popup notification for verification that it is no longer running.
+
+      softstepBase.exit();
+
       getHost().showPopupNotification("BWSSoftstepper Exited");
    }
 

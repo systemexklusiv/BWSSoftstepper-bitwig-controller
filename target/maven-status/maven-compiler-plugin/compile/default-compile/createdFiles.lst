@@ -1,5 +1,8 @@
 de\davidrival\hardware\Softstep1.class
 de\davidrival\hardware\standalone\Softstep1Standalone.class
+de\davidrival\hardware\Led.class
 de\davidrival\SoftstepperExtension.class
 de\davidrival\SoftstepperExtensionDefinition.class
+de\davidrival\hardware\SoftstepBase$SoftstepBaseBuilder.class
+de\davidrival\hardware\SoftstepBase.class
 de\davidrival\hardware\standalone\Softstep1PadStandalone.class

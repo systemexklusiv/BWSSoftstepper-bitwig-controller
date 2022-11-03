@@ -5,10 +5,10 @@ de\davidrival\softstep\hardware\SoftstepHardware.class
 de\davidrival\softstep\SoftstepperExtension.class
 de\davidrival\softstep\controller\LedStates.class
 de\davidrival\softstep\controller\SoftstepController.class
-de\davidrival\softstep\hardware\LedFlashing.class
 de\davidrival\softstep\hardware\standalone\Softstep1PadStandalone.class
 de\davidrival\softstep\SoftstepperExtensionDefinition.class
 de\davidrival\softstep\controller\LedStates$LedStatesBuilder.class
 de\davidrival\softstep\controller\Pages.class
 de\davidrival\softstep\hardware\SoftstepHardwareBase$SoftstepHardwareBaseBuilder.class
 de\davidrival\softstep\hardware\Softstep1.class
+de\davidrival\softstep\hardware\LedLight.class

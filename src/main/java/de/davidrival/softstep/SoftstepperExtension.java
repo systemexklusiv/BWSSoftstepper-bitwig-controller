@@ -14,17 +14,12 @@ import java.util.List;
 
 public class SoftstepperExtension extends ControllerExtension
 {
-
-   List<AbsoluteHardwareControl> sliders = new ArrayList<>(10);
    MidiIn midiIn;
    MidiOut midiOut;
 
    Transport transport;
 
-   static final int CHANNEL = 0;
-   HardwareSurface hardwareSurface;
-
-   SoftstepHardwareBase softstepBase;
+   SoftstepController softstepController;
 
    protected SoftstepperExtension(final SoftstepperExtensionDefinition definition, final ControllerHost host)
    {
@@ -44,8 +39,8 @@ public class SoftstepperExtension extends ControllerExtension
       midiIn.setSysexCallback(this::onSysex0);
 
       SoftstepHardware softstepHardware = new SoftstepHardware(midiOut);
-      SoftstepController softstepController = new SoftstepController(Pages.CTRL, softstepHardware);
 
+      softstepController = new SoftstepController(Pages.CLIP, softstepHardware);
       softstepController.display();
 
       host.showPopupNotification("BWSSoftstepper Initialized");
@@ -59,7 +54,7 @@ public class SoftstepperExtension extends ControllerExtension
       // TODO: Perform any cleanup once the driver exits
       // For now just show a popup notification for verification that it is no longer running.
 
-      softstepBase.exit();
+      softstepController.exit();
 
       getHost().showPopupNotification("BWSSoftstepper Exited");
    }
@@ -73,6 +68,7 @@ public class SoftstepperExtension extends ControllerExtension
    /** Called when we receive short MIDI message on port 0. */
    private void onMidi0(ShortMidiMessage msg) 
    {
+      softstepController.handleMidi(msg);
       getHost().println(msg.toString());
    }
 

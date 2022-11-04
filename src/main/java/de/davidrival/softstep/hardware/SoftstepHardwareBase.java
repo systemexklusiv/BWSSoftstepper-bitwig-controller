@@ -9,10 +9,16 @@ import lombok.Setter;
 @Getter
 @Setter
 @Builder
-@AllArgsConstructor
 public class SoftstepHardwareBase {
 
     private final MidiOut midiOut;
+
+    public static final int STATUS_BYTE = 176;
+
+    public SoftstepHardwareBase(MidiOut midiOut) {
+        this.midiOut = midiOut;
+        init();
+    }
 
     public void init() {
         midiOut.sendSysex("f0 00 1b 48 7a 01 00 00 00 00 00 00 00 00 00 00 00 01 00 09 00 0b 2b 3a 00 10 04 01 00 00 00 00 00 00 00 2f 7e 00 00 00 00 02 f7"); //Standalone

@@ -4,6 +4,7 @@ import com.bitwig.extension.api.util.midi.ShortMidiMessage;
 import com.bitwig.extension.callback.ShortMidiMessageReceivedCallback;
 import com.bitwig.extension.controller.api.*;
 import com.bitwig.extension.controller.ControllerExtension;
+import de.davidrival.softstep.api.SendToApi;
 import de.davidrival.softstep.controller.Pages;
 import de.davidrival.softstep.controller.SoftstepController;
 import de.davidrival.softstep.hardware.SoftstepHardware;
@@ -40,8 +41,14 @@ public class SoftstepperExtension extends ControllerExtension
 
       SoftstepHardware softstepHardware = new SoftstepHardware(midiOut);
 
-      softstepController = new SoftstepController(Pages.CLIP, softstepHardware);
+      SendToApi sendToApi = new SendToApi(host);
+
+      softstepController = new SoftstepController(Pages.CLIP, softstepHardware, sendToApi);
+
       softstepController.display();
+
+
+
 
       host.showPopupNotification("BWSSoftstepper Initialized");
       getHost().println("BWSSoftstepper Initialized!");

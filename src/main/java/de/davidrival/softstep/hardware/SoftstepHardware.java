@@ -6,9 +6,9 @@ import de.davidrival.softstep.controller.Pages;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class SoftstepHardware extends SoftstepHardwareBase{
+
     public SoftstepHardware(MidiOut midiOut) {
         super(midiOut);
-        init();
     }
 
     public void showLeds(Pages currentPage) {

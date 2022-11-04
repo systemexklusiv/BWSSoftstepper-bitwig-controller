@@ -13,15 +13,20 @@ import java.util.List;
 @Setter
 public class Softstep1Controls {
 
-    static final int startData1At = 44;
-    List<Softstep1Pad> pads = new ArrayList<>(10);
+    static final int START_DATA_1_AT = 44;
+    List<Softstep1Pad> pads;
 
     public Softstep1Controls() {
-        init();
+        pads = init();
     }
 
-    public void init() {
+    /**
+     * Hardcoded init as the factory default Softstep is starting att CC data1 44
+     * and takes up 4 CCs per Pad, each corner (direktion) takes up one.
+     */
+    public List<Softstep1Pad> init() {
         Softstep1Pad pad;
+        List<Softstep1Pad> tmpPads = new ArrayList<>(10);
         int currentData1 = 44;
         for (int i = 0; i < 10; i++) {
             pad = new Softstep1Pad(i);
@@ -29,15 +34,16 @@ public class Softstep1Controls {
                 pad.getDirections().put(currentData1 + j, -1);
             }
             pad.init();
-            pads.add(pad);
+            tmpPads.add(pad);
             currentData1 += 4;
         }
+        return tmpPads;
     }
 
     public void update(ShortMidiMessage msg) {
         if ( msg.getStatusByte() == SoftstepHardwareBase.STATUS_BYTE)
         {
-            pads.stream().parallel().filter(pad -> pad.inRange(msg.getData1()))
+            pads.stream().filter(pad -> pad.inRange(msg.getData1()))
                     .findFirst().ifPresent(pad -> {
                         if (pad.getPressure() != msg.getData2()) {
                             pad.setPressure(msg.getData2());

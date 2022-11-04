@@ -4,6 +4,9 @@ import de.davidrival.softstep.controller.Softstep1Controls;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.Optional;
+import java.util.stream.Collectors;
+
 public class TestSoftstep1 {
 
     @Test
@@ -11,7 +14,22 @@ public class TestSoftstep1 {
         Softstep1Controls softstep1 = new Softstep1Controls();
 
         Assert.assertEquals(10, softstep1.getPads().size());
-        Assert.assertEquals(44, softstep1.getPads().get(0).getDirections().get(0), 44);
-        Assert.assertEquals(83, (int) softstep1.getPads().get(9).getDirections().get(3));
+        Assert.assertEquals(Optional.of(44).get(), softstep1
+                .getPads()
+                .get(0)
+                .getDirections()
+                .keySet()
+                .stream()
+                .collect(Collectors.toList())
+                .get(0));
+
+        Assert.assertEquals(Optional.of(83).get(), softstep1
+                .getPads()
+                .get(9)
+                .getDirections()
+                .keySet()
+                .stream()
+                .collect(Collectors.toList())
+                .get(3));
     }
 }

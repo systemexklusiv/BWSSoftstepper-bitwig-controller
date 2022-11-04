@@ -1,0 +1,31 @@
+package de.davidrival.softstep.api;
+
+import com.bitwig.extension.controller.api.*;
+import de.davidrival.softstep.controller.SoftstepController;
+import lombok.Getter;
+import lombok.Setter;
+
+
+@Getter
+@Setter
+public class ApiManager {
+
+    private final ClipLauncherSlotBank slotBank;
+    private UserControlBank userControls;
+    private SoftstepController softstepController;
+
+
+    public ApiManager(ControllerHost host) {
+
+         this.userControls = host.createUserControls(10);
+         TrackBank trackBank = host.createMainTrackBank(1,0, 9);
+         Track track = trackBank.getItemAt(0);
+         this.slotBank = track.clipLauncherSlotBank();
+
+         this.slotBank.addHasContentObserver((idx, newVal) -> softstepController.slotBankContentChanged(idx, newVal) );
+    }
+
+    public void setController(SoftstepController softstepController) {
+        this.softstepController = softstepController;
+    }
+}

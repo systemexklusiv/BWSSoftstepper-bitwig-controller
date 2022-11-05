@@ -15,6 +15,12 @@ public class SoftstepHardwareBase {
     private final MidiOut midiOut;
 
     public static final int STATUS_BYTE = 176;
+    public static final int NAV_LEFT_DATA1 = 80;
+    public static final int NAV_RIGHT_DATA1 = 81;
+    public static final int NAV_PAD_PUSHED_DOWN_TRESHOLD = 2;
+
+
+
 
     public SoftstepHardwareBase(MidiOut midiOut) {
         this.midiOut = midiOut;

@@ -6,6 +6,7 @@ import com.bitwig.extension.controller.api.Parameter;
 import de.davidrival.softstep.api.ApiManager;
 import de.davidrival.softstep.hardware.SoftstepHardware;
 
+import de.davidrival.softstep.hardware.SoftstepHardwareBase;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -17,7 +18,8 @@ import java.util.stream.Collectors;
 @Setter
 public class SoftstepController {
 
-    private static final int MODE_THRESHOLD = 0;
+
+    public static final int NAV_PAD_PUSHED_DOWN_TRESHOLD = 2;
 
     private SoftstepHardware softstepHardware;
 
@@ -46,15 +48,24 @@ public class SoftstepController {
     }
 
     public void handleMidi(ShortMidiMessage msg) {
-        checkForPageChange(msg);
+
+        // don't forward midi if consumed for page change
+        if (isMidiUsedForPageChange(msg)) return;
+
+        // update datastructure of softstep pads
         controls.update(msg);
-        checkApiToBitwig();
+
+        triggerBitwigIfControlsWereUsed(controls);
     }
 
-    private void checkApiToBitwig() {
+    private void triggerBitwigIfControlsWereUsed(Softstep1Controls controls) {
         List<Softstep1Pad> pads = controls.getPads()
-                .stream().filter(pad -> pad.hasChanged)
+                .stream()
+                .filter(pad -> pad.hasChanged)
                 .collect(Collectors.toList());
+
+//        If no controlls where used on the device exit
+        if (pads.size() == 0) return;
 
         switch (pages.getCurrentPage()) {
             case CTRL:
@@ -68,7 +79,11 @@ public class SoftstepController {
                 );
                 break;
             case CLIP:
-                pads.forEach(pad -> {
+                pads.stream()
+                        // In case of firing up clips ther must not pads with higher
+                        // indexes as there are scenes or bitwig will complain and shutdown
+                        .filter(pad -> pad.getNumber() <= ApiManager.NUM_SCENES)
+                        .forEach(pad -> {
                             apiManager
                                     .getSlotBank()
                                     .launch(pad.getNumber());
@@ -79,19 +94,26 @@ public class SoftstepController {
         }
     }
 
-    private void checkForPageChange(ShortMidiMessage msg) {
-        if (msg.getStatusByte() == 176 && msg.getData1() == 80 && msg.getData2() > MODE_THRESHOLD) {
-            if (pages.getCurrentPage().pageIndex != Page.CLIP.pageIndex) {
-                pages.setCurrentPage(Page.CLIP);
-                display();
+    private boolean isMidiUsedForPageChange(ShortMidiMessage msg) {
+        if (msg.getStatusByte() == SoftstepHardwareBase.STATUS_BYTE
+                && msg.getData2() > NAV_PAD_PUSHED_DOWN_TRESHOLD) {
+
+            if (msg.getData1() == SoftstepHardwareBase.NAV_LEFT_DATA1) {
+                if (pages.getCurrentPage().pageIndex != Page.CLIP.pageIndex) {
+                    pages.setCurrentPage(Page.CLIP);
+                    display();
+                }
+                return true;
+            }
+            if (msg.getData1() == SoftstepHardwareBase.NAV_RIGHT_DATA1) {
+                if (pages.getCurrentPage().pageIndex != Page.CTRL.pageIndex) {
+                    pages.setCurrentPage(Page.CTRL);
+                    display();
+                }
+                return true;
             }
         }
-        if (msg.getStatusByte() == 176 && msg.getData1() == 81 && msg.getData2() > MODE_THRESHOLD) {
-            if (pages.getCurrentPage().pageIndex != Page.CTRL.pageIndex) {
-                pages.setCurrentPage(Page.CTRL);
-                display();
-            }
-        }
+        return false;
     }
 
 
@@ -111,9 +133,9 @@ public class SoftstepController {
         // Needed if one wants to switch to another mode
         pages.distributeLedStates(page,index,ledStates);
 
-        p(" >>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ");
-        p(Page.CLIP.ledStates.toString());
-        p(" >>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ");
+//        p(" >>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ");
+//        p(Page.CLIP.ledStates.toString());
+//        p(" >>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ");
 
         // Only render the led states of the active page
         if (pages.getCurrentPage().equals(page)) {

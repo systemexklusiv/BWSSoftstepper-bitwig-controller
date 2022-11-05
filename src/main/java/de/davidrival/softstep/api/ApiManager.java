@@ -15,7 +15,7 @@ public class ApiManager {
     public static final int AMOUNT_USER_CONTROLS = 10;
     public static final int NUM_TRACKS = 1;
     public static final int NUM_SENDS = 0;
-    public static final int NUM_SCENES = 9;
+    public static final int NUM_SCENES = 5;
     public static final boolean SHOW_CLIP_LAUNCHER_FEEDBACK = true;
 
     public enum PLAYBACK_EVENT {STOPPED, PLAYING, RECORDING, PLAYBACK_STATE_NOT_KNOWN}
@@ -41,11 +41,11 @@ public class ApiManager {
 
     public void contentInSlotBankChanged(int idx, boolean onOff) {
         softstepController.updateLedStates(Page.CLIP, idx, onOff ? STOP : OFF);
-        p("! content ! " + onOff);
+//        p("! content ! " + onOff);
     }
 
     public void playbackStateChanged(int slotIndex, ApiManager.PLAYBACK_EVENT playbackEvent, boolean isQueued) {
-        p("! playbackStateChanged ! slotIndex " + slotIndex + " playbackState " + playbackEvent.toString() + " isQueued " + isQueued);
+//        p("! playbackStateChanged ! slotIndex " + slotIndex + " playbackState " + playbackEvent.toString() + " isQueued " + isQueued);
         switch (playbackEvent) {
              case STOPPED:
                 softstepController.updateLedStates(Page.CLIP, slotIndex, isQueued ? STOP_QUE : STOP);

@@ -16,7 +16,7 @@ public class SoftstepHardware extends SoftstepHardwareBase{
     public void showInitialLeds(Page currentPage) {
         resetLeds();
         AtomicInteger i = new AtomicInteger();
-        currentPage.initialLedStates.forEach(
+        currentPage.ledStates.forEach(
                 led -> super.setLed(i.getAndIncrement()
                         , led.ledColor.data2ForLed
                         , led.ledFlashing.data2ForLed)

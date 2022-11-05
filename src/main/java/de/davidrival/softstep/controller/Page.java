@@ -44,14 +44,14 @@ public enum Page {
     public final int pageIndex;
     public final LedStates on;
     public final LedStates off;
-    public final ArrayList<LedStates> initialLedStates;
+    public final ArrayList<LedStates> ledStates;
 
 
     Page(int pageIndex, LedStates on, LedStates off, ArrayList<LedStates> initialLedStates) {
         this.pageIndex = pageIndex;
         this.on = on;
         this.off = off;
-        this.initialLedStates = initialLedStates;
+        this.ledStates = initialLedStates;
     }
 
 

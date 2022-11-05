@@ -39,12 +39,12 @@ public class SoftstepController {
         this.pages = controllerPages;
         this.softstepHardware = softstepHardware;
         this.apiManager = apiManager;
+        this.apiManager.setController(this);
     }
 
     public void display() {
         softstepHardware.displayText(pages.getCurrentPage().name());
         softstepHardware.showInitialLeds(pages.getCurrentPage());
-//        currentLedStates currentPage.initialLedStates
     }
 
     public void handleMidi(ShortMidiMessage msg) {
@@ -98,7 +98,7 @@ public class SoftstepController {
     }
 
     public void contentInSlotBankChanged(int idx, boolean onOff) {
-                    softstepHardware.drawLedAt(idx, onOff ? Page.CLIP_LED_STATES.STOP : OFF);
+                    updateLedStates(Page.CLIP, idx, onOff ? Page.CLIP_LED_STATES.STOP : OFF);
                     p("! content ! " + onOff);
     }
 
@@ -106,15 +106,27 @@ public class SoftstepController {
         p("! playbackStateChanged ! slotIndex " + slotIndex + " playbackState " + playbackEvent.toString() + " isQueued " + isQueued);
         switch (playbackEvent) {
             case STOPPED:
-                softstepHardware.drawLedAt(slotIndex, isQueued ? STOP_QUE : STOP);
+                updateLedStates(Page.CLIP, slotIndex, isQueued ? STOP_QUE : STOP);
                 break;
             case PLAYING:
-                softstepHardware.drawLedAt(slotIndex, isQueued ? PLAY_QUE : PLAY);
+                updateLedStates(Page.CLIP, slotIndex, isQueued ? PLAY_QUE : PLAY);
                 break;
             case RECORDING:
-                softstepHardware.drawLedAt(slotIndex, isQueued ? REC_QUE : REC);
+                updateLedStates(Page.CLIP, slotIndex, isQueued ? REC_QUE : REC);
                 break;
         }
+    }
+
+    /**
+     *
+     * @param slotIndex
+     * @param ledStates
+     */
+    private void updateLedStates(Page page, int slotIndex, LedStates ledStates) {
+
+//        pages.distributeLedStates();
+
+        softstepHardware.drawLedAt(slotIndex, ledStates);
     }
 
     public void exit() {

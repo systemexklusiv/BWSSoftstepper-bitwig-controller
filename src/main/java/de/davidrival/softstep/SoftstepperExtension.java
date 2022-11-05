@@ -45,7 +45,7 @@ public class SoftstepperExtension extends ControllerExtension
               , softstepHardware
               , apiManager
       );
-      apiManager.setController(softstepController);
+
 
       softstepController.display();
 

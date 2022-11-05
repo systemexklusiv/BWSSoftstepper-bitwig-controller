@@ -50,6 +50,7 @@ public class ApiManager {
             case 2:
                 return RECORDING;
             default:
+                host.errorln("Unknown state from PlaybackStateObserver with idx: " + playbackState);
                 return PLAYBACK_STATE_NOT_KNOWN;
         }
     }

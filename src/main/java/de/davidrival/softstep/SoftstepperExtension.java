@@ -38,7 +38,7 @@ public class SoftstepperExtension extends ControllerExtension
       SoftstepHardware softstepHardware = new SoftstepHardware(midiOut);
 
       ApiManager apiManager = new ApiManager(host);
-      softstepController = new SoftstepController(Pages.CLIP, softstepHardware, apiManager);
+      softstepController = new SoftstepController(Pages.CLIP, softstepHardware, apiManager, host);
       apiManager.setController(softstepController);
 
       softstepController.display();
@@ -72,7 +72,7 @@ public class SoftstepperExtension extends ControllerExtension
    private void onMidi0(ShortMidiMessage msg) 
    {
       softstepController.handleMidi(msg);
-      getHost().println(msg.toString());
+//      getHost().println(msg.toString());
    }
 
    /** Called when we receive sysex MIDI message on port 0. */

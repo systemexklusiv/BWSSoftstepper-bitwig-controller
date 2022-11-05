@@ -1,6 +1,7 @@
 package de.davidrival.softstep.hardware;
 
 import com.bitwig.extension.controller.api.MidiOut;
+import de.davidrival.softstep.controller.LedStates;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -33,6 +34,16 @@ public class SoftstepHardwareBase {
 
         midiOut.sendSysex("f0 00 1b 48 7a 01 00 00 00 00 00 00 00 00 00 00 00 01 00 09 00 0b 2b 3a 00 10 04 00 00 00 00 00 00 00 00 17 1f 00 00 00 00 00 f7"); // standalone
         midiOut.sendSysex("f0 00 1b 48 7a 01 00 00 00 00 00 00 00 00 00 00 00 01 00 09 00 0b 2b 3a 00 10 03 01 00 00 00 00 00 00 00 68 66 00 00 00 00 00 f7"); // tether
+    }
+
+    public void drawLedAt(int index, LedStates ledStates) {
+        // strange.. needs to turn of on all colors before drawing
+        setLed(index, LedColor.GREEN.data2ForLed, LedLight.OFF.data2ForLed);
+        setLed(index, LedColor.YELLOW.data2ForLed, LedLight.OFF.data2ForLed);
+        setLed(index, LedColor.RED.data2ForLed, LedLight.OFF.data2ForLed);
+        setLed(index
+                , ledStates.ledColor.data2ForLed
+                , ledStates.ledFlashing.data2ForLed);
     }
 
     /**

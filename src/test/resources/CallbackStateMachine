@@ -1,0 +1,30 @@
+RECORDING
+
+### empty slot -> click rec
+! recordingQue ! true
+! recordingQue ! false
+! content ! true
+! recording ! true
+
+### recording clip -> click to play
+! playingQue ! true
+! playingQue ! false
+! recording ! false
+! playing ! true
+
+### recording clip -> delete clip
+! content ! false
+! recording ! false
+
+### recording clip -> click to stop clip
+! playing ! false
+
+PLAYING
+### stopped clip -> click to play
+! playingQue ! true
+! playingQue ! false
+! playing ! true
+
+### play clip -> click to stop clip
+! playing ! false
+

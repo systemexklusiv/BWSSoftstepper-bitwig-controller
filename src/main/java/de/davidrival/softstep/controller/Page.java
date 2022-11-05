@@ -55,7 +55,7 @@ public enum Page {
     }
 
 
-    static class CLIP_LED_STATES {
+    public static class CLIP_LED_STATES {
         public static final LedStates OFF = new LedStates(LedColor.YELLOW, LedLight.OFF);
         public static final LedStates STOP = new LedStates(LedColor.YELLOW, LedLight.ON);
         public static final LedStates STOP_QUE = new LedStates(LedColor.YELLOW, LedLight.BLINK);

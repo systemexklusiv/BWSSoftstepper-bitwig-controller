@@ -6,8 +6,6 @@ import com.bitwig.extension.controller.api.Parameter;
 import de.davidrival.softstep.api.ApiManager;
 import de.davidrival.softstep.hardware.SoftstepHardware;
 
-import static de.davidrival.softstep.controller.Page.CLIP_LED_STATES.*;
-
 import lombok.Getter;
 import lombok.Setter;
 
@@ -44,7 +42,7 @@ public class SoftstepController {
 
     public void display() {
         softstepHardware.displayText(pages.getCurrentPage().name());
-        softstepHardware.showInitialLeds(pages.getCurrentPage());
+        softstepHardware.showAllLeds(pages.getCurrentPage());
     }
 
     public void handleMidi(ShortMidiMessage msg) {
@@ -80,7 +78,6 @@ public class SoftstepController {
                 break;
         }
     }
-//    public void checkBitwigToController
 
     private void checkForPageChange(ShortMidiMessage msg) {
         if (msg.getStatusByte() == 176 && msg.getData1() == 80 && msg.getData2() > MODE_THRESHOLD) {
@@ -97,36 +94,31 @@ public class SoftstepController {
         }
     }
 
-    public void contentInSlotBankChanged(int idx, boolean onOff) {
-                    updateLedStates(Page.CLIP, idx, onOff ? Page.CLIP_LED_STATES.STOP : OFF);
-                    p("! content ! " + onOff);
-    }
-
-    public void playbackStateChanged(int slotIndex, ApiManager.PLAYBACK_EVENT playbackEvent, boolean isQueued) {
-        p("! playbackStateChanged ! slotIndex " + slotIndex + " playbackState " + playbackEvent.toString() + " isQueued " + isQueued);
-        switch (playbackEvent) {
-            case STOPPED:
-                updateLedStates(Page.CLIP, slotIndex, isQueued ? STOP_QUE : STOP);
-                break;
-            case PLAYING:
-                updateLedStates(Page.CLIP, slotIndex, isQueued ? PLAY_QUE : PLAY);
-                break;
-            case RECORDING:
-                updateLedStates(Page.CLIP, slotIndex, isQueued ? REC_QUE : REC);
-                break;
-        }
-    }
 
     /**
+     * Write to the states of each page
+     * Doesn't matter is currently active or not
+     * Needed if one wants to switch to another mode. Afterwards it sends out the
+     * changed led states to the control for the acive page
      *
-     * @param slotIndex
-     * @param ledStates
+     * @param page the page where the LED is to be set (not importand if active or not
+     * @param index the index of the controller ( e.g. the slotindex if used in clip mode)
+     * @param ledStates the led states, meaninf color and flashin mode
      */
-    private void updateLedStates(Page page, int slotIndex, LedStates ledStates) {
+    public void updateLedStates(Page page, int index, LedStates ledStates) {
+        // First write to the states of each page
+        // Doesn't matter is currently active or not
+        // Needed if one wants to switch to another mode
+        pages.distributeLedStates(page,index,ledStates);
 
-//        pages.distributeLedStates();
+        p(" >>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ");
+        p(Page.CLIP.ledStates.toString());
+        p(" >>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ");
 
-        softstepHardware.drawLedAt(slotIndex, ledStates);
+        // Only render the led states of the active page
+        if (pages.getCurrentPage().equals(page)) {
+            softstepHardware.drawLedAt(index, ledStates);
+        }
     }
 
     public void exit() {

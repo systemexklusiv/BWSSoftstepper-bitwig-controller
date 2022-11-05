@@ -18,7 +18,7 @@ public class ControllerPages {
         this.currentPage = currentPage;
     }
 
-    public void distributeLedStates(Page page, int padIndex, LedStates ledStates ) {
+    public void distributeLedStates(Page page, int padIndex, LedStates ledState ) {
         Optional<Page> pageToSetLedUpdate = Arrays.stream(Page.values())
                 .filter(eachPage -> eachPage.equals(page))
                 .findFirst();
@@ -26,7 +26,7 @@ public class ControllerPages {
         pageToSetLedUpdate.ifPresent(
                     p -> {
                         p.ledStates.remove(padIndex);
-                        p.ledStates.add(padIndex, ledStates);
+                        p.ledStates.add(padIndex, ledState);
                     }
                 );
 

@@ -1,12 +1,12 @@
 package de.davidrival.softstep.api;
 
 import com.bitwig.extension.controller.api.*;
+import de.davidrival.softstep.controller.Page;
 import de.davidrival.softstep.controller.SoftstepController;
 import lombok.Getter;
 import lombok.Setter;
-
 import static de.davidrival.softstep.api.ApiManager.PLAYBACK_EVENT.*;
-
+import static de.davidrival.softstep.controller.Page.CLIP_LED_STATES.*;
 
 @Getter
 @Setter
@@ -33,12 +33,30 @@ public class ApiManager {
         trackBank.setShouldShowClipLauncherFeedback(SHOW_CLIP_LAUNCHER_FEEDBACK);
         Track track = trackBank.getItemAt(0);
         this.slotBank = track.clipLauncherSlotBank();
-        this.slotBank.addHasContentObserver((slotIndex, onOff) -> softstepController
-                .contentInSlotBankChanged(slotIndex, onOff));
+        this.slotBank.addHasContentObserver(this::contentInSlotBankChanged);
 
-        this.slotBank.addPlaybackStateObserver((slotIndex, playbackState, isQueued) -> softstepController
-                .playbackStateChanged(slotIndex, getApiEventByCallbackIndex(playbackState)
+        this.slotBank.addPlaybackStateObserver((slotIndex, playbackState, isQueued) -> playbackStateChanged(slotIndex, getApiEventByCallbackIndex(playbackState)
                         , isQueued));
+    }
+
+    public void contentInSlotBankChanged(int idx, boolean onOff) {
+        softstepController.updateLedStates(Page.CLIP, idx, onOff ? STOP : OFF);
+        p("! content ! " + onOff);
+    }
+
+    public void playbackStateChanged(int slotIndex, ApiManager.PLAYBACK_EVENT playbackEvent, boolean isQueued) {
+        p("! playbackStateChanged ! slotIndex " + slotIndex + " playbackState " + playbackEvent.toString() + " isQueued " + isQueued);
+        switch (playbackEvent) {
+             case STOPPED:
+                softstepController.updateLedStates(Page.CLIP, slotIndex, isQueued ? STOP_QUE : STOP);
+                break;
+            case PLAYING:
+                softstepController.updateLedStates(Page.CLIP, slotIndex, isQueued ? PLAY_QUE : PLAY);
+                break;
+            case RECORDING:
+                softstepController.updateLedStates(Page.CLIP, slotIndex, isQueued ? REC_QUE : REC);
+                break;
+        }
     }
 
     private PLAYBACK_EVENT getApiEventByCallbackIndex(int playbackState) {
@@ -59,4 +77,7 @@ public class ApiManager {
         this.softstepController = softstepController;
     }
 
+    public void p(String text) {
+        host.println(text);
+    }
 }

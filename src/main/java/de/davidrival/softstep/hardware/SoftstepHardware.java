@@ -13,7 +13,7 @@ public class SoftstepHardware extends SoftstepHardwareBase{
         super(midiOut);
     }
 
-    public void showInitialLeds(Page currentPage) {
+    public void showAllLeds(Page currentPage) {
         resetLeds();
         AtomicInteger i = new AtomicInteger();
         currentPage.ledStates.forEach(

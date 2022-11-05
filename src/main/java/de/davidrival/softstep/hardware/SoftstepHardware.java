@@ -2,7 +2,7 @@ package de.davidrival.softstep.hardware;
 
 import com.bitwig.extension.controller.api.MidiOut;
 import de.davidrival.softstep.controller.LedStates;
-import de.davidrival.softstep.controller.Pages;
+import de.davidrival.softstep.controller.Page;
 
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -13,7 +13,7 @@ public class SoftstepHardware extends SoftstepHardwareBase{
         super(midiOut);
     }
 
-    public void showInitialLeds(Pages currentPage) {
+    public void showInitialLeds(Page currentPage) {
         resetLeds();
         AtomicInteger i = new AtomicInteger();
         currentPage.initialLedStates.forEach(

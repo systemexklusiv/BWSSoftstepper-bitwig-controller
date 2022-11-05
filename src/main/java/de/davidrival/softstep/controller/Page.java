@@ -3,15 +3,15 @@ package de.davidrival.softstep.controller;
 import de.davidrival.softstep.hardware.LedColor;
 import de.davidrival.softstep.hardware.LedLight;
 
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 
-public enum Pages {
+public enum Page {
     CTRL(0
             , new LedStates(LedColor.RED, LedLight.ON)
             , new LedStates(LedColor.GREEN, LedLight.ON)
-            , Arrays.asList(
+            , new ArrayList<>(Arrays.asList(
             new LedStates(LedColor.GREEN, LedLight.ON),
             new LedStates(LedColor.GREEN, LedLight.ON),
             new LedStates(LedColor.GREEN, LedLight.ON),
@@ -22,12 +22,12 @@ public enum Pages {
             new LedStates(LedColor.GREEN, LedLight.ON),
             new LedStates(LedColor.GREEN, LedLight.ON),
             new LedStates(LedColor.GREEN, LedLight.ON)
-    )),
+    ))),
 
     CLIP(1
             , new LedStates(LedColor.YELLOW, LedLight.ON)
             , new LedStates(LedColor.YELLOW, LedLight.OFF)
-            , Arrays.asList(
+            , new ArrayList<>(Arrays.asList(
                 new LedStates(LedColor.YELLOW, LedLight.OFF),
                 new LedStates(LedColor.YELLOW, LedLight.OFF),
                 new LedStates(LedColor.YELLOW, LedLight.OFF),
@@ -37,17 +37,17 @@ public enum Pages {
                 new LedStates(LedColor.YELLOW, LedLight.OFF),
                 new LedStates(LedColor.YELLOW, LedLight.OFF),
                 new LedStates(LedColor.YELLOW, LedLight.OFF),
-                new LedStates(LedColor.YELLOW, LedLight.OFF)
+                new LedStates(LedColor.YELLOW, LedLight.OFF))
             )
     );
 
     public final int pageIndex;
     public final LedStates on;
     public final LedStates off;
-    public final List<LedStates> initialLedStates;
+    public final ArrayList<LedStates> initialLedStates;
 
 
-    Pages(int pageIndex, LedStates on, LedStates off, List<LedStates> initialLedStates) {
+    Page(int pageIndex, LedStates on, LedStates off, ArrayList<LedStates> initialLedStates) {
         this.pageIndex = pageIndex;
         this.on = on;
         this.off = off;

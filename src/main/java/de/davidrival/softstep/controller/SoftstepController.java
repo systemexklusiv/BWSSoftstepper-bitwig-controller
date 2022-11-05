@@ -6,7 +6,7 @@ import com.bitwig.extension.controller.api.Parameter;
 import de.davidrival.softstep.api.ApiManager;
 import de.davidrival.softstep.hardware.SoftstepHardware;
 
-import static de.davidrival.softstep.controller.Pages.CLIP_LED_STATES.*;
+import static de.davidrival.softstep.controller.Page.CLIP_LED_STATES.*;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -29,20 +29,21 @@ public class SoftstepController {
 
     private ControllerHost controllerHost;
 
-    public SoftstepController(Pages currentPage
-            , SoftstepHardware softstepHardware
-            , ApiManager apiManager
-            , ControllerHost host) {
+    private ControllerPages pages;
 
-        PageHandler.setCurrentPage(currentPage);
+    public SoftstepController(
+            ControllerPages controllerPages
+            , SoftstepHardware softstepHardware
+            , ApiManager apiManager) {
+
+        this.pages = controllerPages;
         this.softstepHardware = softstepHardware;
         this.apiManager = apiManager;
-        this.controllerHost = host;
     }
 
     public void display() {
-        softstepHardware.displayText(PageHandler.getCurrentPage().name());
-        softstepHardware.showInitialLeds(PageHandler.getCurrentPage());
+        softstepHardware.displayText(pages.getCurrentPage().name());
+        softstepHardware.showInitialLeds(pages.getCurrentPage());
 //        currentLedStates currentPage.initialLedStates
     }
 
@@ -53,9 +54,11 @@ public class SoftstepController {
     }
 
     private void checkApiToBitwig() {
-        List<Softstep1Pad> pads = controls.getPads().stream().filter(pad -> pad.hasChanged).collect(Collectors.toList());
+        List<Softstep1Pad> pads = controls.getPads()
+                .stream().filter(pad -> pad.hasChanged)
+                .collect(Collectors.toList());
 
-        switch (PageHandler.getCurrentPage()) {
+        switch (pages.getCurrentPage()) {
             case CTRL:
                 pads.forEach(pad -> {
                             Parameter param = apiManager
@@ -81,21 +84,21 @@ public class SoftstepController {
 
     private void checkForPageChange(ShortMidiMessage msg) {
         if (msg.getStatusByte() == 176 && msg.getData1() == 80 && msg.getData2() > MODE_THRESHOLD) {
-            if (PageHandler.getCurrentPage().pageIndex != Pages.CLIP.pageIndex) {
-                PageHandler.setCurrentPage(Pages.CLIP);
+            if (pages.getCurrentPage().pageIndex != Page.CLIP.pageIndex) {
+                pages.setCurrentPage(Page.CLIP);
                 display();
             }
         }
         if (msg.getStatusByte() == 176 && msg.getData1() == 81 && msg.getData2() > MODE_THRESHOLD) {
-            if (PageHandler.getCurrentPage().pageIndex != Pages.CTRL.pageIndex) {
-                PageHandler.setCurrentPage(Pages.CTRL);
+            if (pages.getCurrentPage().pageIndex != Page.CTRL.pageIndex) {
+                pages.setCurrentPage(Page.CTRL);
                 display();
             }
         }
     }
 
     public void contentInSlotBankChanged(int idx, boolean onOff) {
-                    softstepHardware.drawLedAt(idx, onOff ? Pages.CLIP_LED_STATES.STOP : OFF);
+                    softstepHardware.drawLedAt(idx, onOff ? Page.CLIP_LED_STATES.STOP : OFF);
                     p("! content ! " + onOff);
     }
 
@@ -119,6 +122,6 @@ public class SoftstepController {
     }
 
     public void p(String text) {
-        controllerHost.println(text);
+        apiManager.getHost().println(text);
     }
 }

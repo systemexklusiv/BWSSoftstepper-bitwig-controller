@@ -85,10 +85,19 @@ public class SoftstepController {
                         .filter(pad -> pad.getNumber() <= ApiManager.NUM_SCENES)
                         .forEach(pad -> {
                             p("! Fire slot by: " + pad);
-                            apiManager
-                                    .getSlotBank()
-                                    .launch(pad.getNumber());
-                            pad.hasChanged = false;
+                            if (pad.hasLongPress) {
+                                apiManager
+                                        .getSlotBank()
+                                        .getItemAt(pad.getNumber())
+                                        .deleteObject();
+                                pad.hasLongPress = false;
+                                pad.hasChanged = false;
+                            } else {
+                                apiManager
+                                        .getSlotBank()
+                                        .launch(pad.getNumber());
+                                pad.hasChanged = false;
+                            }
                         }
                 );
                 break;

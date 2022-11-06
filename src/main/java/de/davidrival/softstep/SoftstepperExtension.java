@@ -19,6 +19,8 @@ public class SoftstepperExtension extends ControllerExtension
 
    SoftstepController softstepController;
 
+   public static ControllerHost host4All;
+
    protected SoftstepperExtension(final SoftstepperExtensionDefinition definition, final ControllerHost host)
    {
       super(definition, host);
@@ -27,7 +29,8 @@ public class SoftstepperExtension extends ControllerExtension
    @Override
    public void init()
    {
-      final ControllerHost host = getHost();      
+      final ControllerHost host = getHost();
+      host4All = getHost();
 
       transport = host.createTransport();
       midiIn = host.getMidiInPort(0);

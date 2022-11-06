@@ -24,7 +24,7 @@ public class TestSoftstep1 {
         Softstep1Controls softstep1 = new Softstep1Controls(host);
 
         Assert.assertEquals(10, softstep1.getPads().size());
-        Assert.assertEquals(Optional.of(44).get(), softstep1
+        Assert.assertEquals(Optional.of(40).get(), softstep1
                 .getPads()
                 .get(0)
                 .getDirections()
@@ -33,7 +33,7 @@ public class TestSoftstep1 {
                 .collect(Collectors.toList())
                 .get(0));
 
-        Assert.assertEquals(Optional.of(83).get(), softstep1
+        Assert.assertEquals(Optional.of(79).get(), softstep1
                 .getPads()
                 .get(9)
                 .getDirections()

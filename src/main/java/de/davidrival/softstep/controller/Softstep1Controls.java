@@ -6,10 +6,7 @@ import de.davidrival.softstep.hardware.SoftstepHardwareBase;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 
@@ -48,15 +45,13 @@ public class Softstep1Controls {
      * @return a fresh and shiny pad
      */
     private Softstep1Pad makePad(int number, int startCC) {
-        Softstep1Pad pad;
-        pad = new Softstep1Pad(number);
+        Map<Integer, Integer> tmpDirections = new HashMap<>(4);
         for (int j = 0; j < 4; j++) {
             // Data1 is the key in the directions map,
             // the value is Data2 and initialized with -1
-            pad.getDirections().put(startCC + j, -1);
+            tmpDirections.put(startCC + j, -1);
         }
-        pad.init();
-       return pad;
+        return new Softstep1Pad(number, tmpDirections);
     }
 
     public void update(ShortMidiMessage msg) {
@@ -70,14 +65,15 @@ public class Softstep1Controls {
                         p("-------------------------");
 
 
-                        if (pad.getPressure() != msg.getData2()) {
-                            pad.setPressure(msg.getData2());
-                            pad.setHasChanged(true);
-                        }
+                        pad.setToDirections(msg.getData1(), msg.getData2());
 
-                        if (pad.directions.get(msg.getData1()) != msg.getData2()) {
-                            pad.directions.put(msg.getData1(), msg.getData2());
-                        }
+
+
+//                        if (pad.getPressure() != msg.getData2()) {
+//                            pad.setPressure(msg.getData2());
+//                            pad.setHasChanged(true);
+//                        }
+
                     });
         }
     }

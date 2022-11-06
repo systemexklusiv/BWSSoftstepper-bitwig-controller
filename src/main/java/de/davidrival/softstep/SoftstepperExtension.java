@@ -72,13 +72,17 @@ public class SoftstepperExtension extends ControllerExtension
    public void flush()
    {
       // TODO Send any updates you need here.
+//      getHost().println("called flush");
    }
 
    /** Called when we receive short MIDI message on port 0. */
    private void onMidi0(ShortMidiMessage msg) 
    {
+      getHost().println("--- incomming msg! ---");
+      getHost().println(msg.toString());
+      getHost().println("^^^^^^^^^^^^^^^^^^^^^^");
+
       softstepController.handleMidi(msg);
-//      getHost().println(msg.toString());
    }
 
    /** Called when we receive sysex MIDI message on port 0. */

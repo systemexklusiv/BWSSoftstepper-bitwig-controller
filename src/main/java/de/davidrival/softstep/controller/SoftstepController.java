@@ -22,7 +22,7 @@ public class SoftstepController {
 
     private SoftstepHardware softstepHardware;
 
-    final Softstep1Controls controls = new Softstep1Controls();
+    final Softstep1Controls controls;
 
     private ApiManager apiManager;
 
@@ -39,6 +39,7 @@ public class SoftstepController {
         this.softstepHardware = softstepHardware;
         this.apiManager = apiManager;
         this.apiManager.setController(this);
+        this.controls = new Softstep1Controls(apiManager.getHost());
     }
 
     public void display() {

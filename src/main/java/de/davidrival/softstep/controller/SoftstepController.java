@@ -18,7 +18,6 @@ import java.util.stream.Collectors;
 @Setter
 public class SoftstepController {
 
-
     public static final int NAV_PAD_PUSHED_DOWN_TRESHOLD = 2;
 
     private SoftstepHardware softstepHardware;
@@ -59,17 +58,17 @@ public class SoftstepController {
     }
 
     private void triggerBitwigIfControlsWereUsed(Softstep1Controls controls) {
-        List<Softstep1Pad> pads = controls.getPads()
+        List<Softstep1Pad> pushedDownPads = controls.getPads()
                 .stream()
                 .filter(pad -> pad.hasChanged)
                 .collect(Collectors.toList());
 
-//        If no controlls where used on the device exit
-        if (pads.size() == 0) return;
+//        If no controlls where used on the device just exit
+        if (pushedDownPads.size() == 0) return;
 
         switch (pages.getCurrentPage()) {
             case CTRL:
-                pads.forEach(pad -> {
+                pushedDownPads.forEach(pad -> {
                             Parameter param = apiManager
                                     .getUserControls()
                                     .getControl(pad.getNumber());
@@ -79,11 +78,12 @@ public class SoftstepController {
                 );
                 break;
             case CLIP:
-                pads.stream()
+                pushedDownPads.stream()
                         // In case of firing up clips ther must not pads with higher
                         // indexes as there are scenes or bitwig will complain and shutdown
                         .filter(pad -> pad.getNumber() <= ApiManager.NUM_SCENES)
                         .forEach(pad -> {
+                            p("! Fire slot by: " + pad);
                             apiManager
                                     .getSlotBank()
                                     .launch(pad.getNumber());

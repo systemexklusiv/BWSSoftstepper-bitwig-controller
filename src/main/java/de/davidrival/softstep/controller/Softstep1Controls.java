@@ -21,7 +21,7 @@ public class Softstep1Controls {
     }
 
     /**
-     * Hardcoded init as the factory default Softstep is starting att CC data1 44
+     * Hardcoded init as the factory default Softstep is starting at CC data1 44
      * and takes up 4 CCs per Pad, each corner (direktion) takes up one.
      */
     public List<Softstep1Pad> init() {
@@ -31,6 +31,8 @@ public class Softstep1Controls {
         for (int i = 0; i < 10; i++) {
             pad = new Softstep1Pad(i);
             for (int j = 0; j < 4; j++) {
+                // Data1 is the key in the directions map,
+                // the value is Data2 and initialized with -1
                 pad.getDirections().put(currentData1 + j, -1);
             }
             pad.init();
@@ -41,8 +43,7 @@ public class Softstep1Controls {
     }
 
     public void update(ShortMidiMessage msg) {
-        if ( msg.getStatusByte() == SoftstepHardwareBase.STATUS_BYTE)
-        {
+        if (msg.getStatusByte() == SoftstepHardwareBase.STATUS_BYTE) {
             pads.stream().filter(pad -> pad.inRange(msg.getData1()))
                     .findFirst().ifPresent(pad -> {
                         if (pad.getPressure() != msg.getData2()) {
@@ -50,7 +51,7 @@ public class Softstep1Controls {
                             pad.setHasChanged(true);
                         }
 
-                        if(pad.directions.get(msg.getData1()) != msg.getData2()) {
+                        if (pad.directions.get(msg.getData1()) != msg.getData2()) {
                             pad.directions.put(msg.getData1(), msg.getData2());
                         }
                     });

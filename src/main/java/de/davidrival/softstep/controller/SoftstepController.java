@@ -2,7 +2,6 @@ package de.davidrival.softstep.controller;
 
 import com.bitwig.extension.api.util.midi.ShortMidiMessage;
 import com.bitwig.extension.controller.api.ControllerHost;
-import com.bitwig.extension.controller.api.Parameter;
 import de.davidrival.softstep.api.ApiManager;
 import de.davidrival.softstep.api.SimpleConsolePrinter;
 import de.davidrival.softstep.hardware.SoftstepHardware;
@@ -11,10 +10,9 @@ import de.davidrival.softstep.hardware.SoftstepHardwareBase;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 
@@ -34,6 +32,8 @@ public class SoftstepController extends SimpleConsolePrinter {
 
     private ControllerPages pages;
 
+    private List<HasControllsForPage> hasControllsForPages;
+
     public SoftstepController(
             ControllerPages controllerPages
             , SoftstepHardware softstepHardware
@@ -45,7 +45,14 @@ public class SoftstepController extends SimpleConsolePrinter {
         this.softstepHardware = softstepHardware;
         this.apiManager = apiManager;
         this.apiManager.setController(this);
-        this.controls = new Controlls(controllerHost);
+        this.controls = new Controlls(apiManager.getHost());
+
+        hasControllsForPages = new ArrayList<>();
+        HasControllsForPage clipControlls = new ClipControlls(Page.CLIP, apiManager);
+        HasControllsForPage userControlls = new UserControlls(Page.CTRL, apiManager);
+        hasControllsForPages.add(clipControlls);
+        hasControllsForPages.add(userControlls);
+
     }
 
     public void display() {
@@ -58,13 +65,10 @@ public class SoftstepController extends SimpleConsolePrinter {
         // don't forward midi if consumed for page change
         if (isMidiUsedForPageChange(msg)) return;
 
-        // update datastructure of softstep pads
         controls.update(msg);
 
         triggerBitwigIfControlsUsed(controls);
     }
-
-    AtomicInteger data1OfLongPressedPad = new AtomicInteger(-1);
 
     private void triggerBitwigIfControlsUsed(Controlls controls) {
         List<Softstep1Pad> pushedDownPads = controls.getPads()
@@ -75,60 +79,11 @@ public class SoftstepController extends SimpleConsolePrinter {
 //        If no controlls where used on the device just exit
         if (pushedDownPads.size() == 0) return;
 
-        switch (pages.getCurrentPage()) {
-            case CTRL:
-                pushedDownPads.forEach(pad -> {
-                            apiManager.setValueOfUserControl(pad.getNumber(), pad.getPressure());
-                            pad.notifyControlConsumed();
-                        }
-                );
-                break;
-            case CLIP:
-
-                List<Softstep1Pad> padsToConsider = pushedDownPads.stream()
-                        // In case of firing up clips their must not pads with higher
-                        // indexes as there are scenes or bitwig will complain and shutdown
-                        .filter(pad -> pad.getNumber() < ApiManager.NUM_SCENES)
-                        .collect(Collectors.toList());
-                //// LONG PRESS STUFF
-                ///// First Check long press
-                padsToConsider.stream()
-                        .filter(p -> p.gestures().isLongPress())
-                        .forEach(pad -> {
-                                    if (pad.gestures().isLongPress()) {
-                                        apiManager
-                                                .getSlotBank()
-                                                .getItemAt(pad.getNumber())
-                                                .deleteObject();
-
-                                        data1OfLongPressedPad.set(pad.getNumber());
-
-                                        pad.notifyControlConsumed();
-                                        p("! Delete slot by: " + pad);
-                                        return;
-                                    }
-
-                                }
+                hasControllsForPages.stream()
+                        .filter(c -> c.getPage().equals(pages.getCurrentPage()))
+                        .findFirst().ifPresent(
+                                p -> p.processControlls(pushedDownPads)
                         );
-                ///// Foot On Offs for clip launch
-                padsToConsider.stream()
-                            .filter(p -> p.gestures().isFootOn())
-                            .forEach(pad -> {
-                                        if (!(data1OfLongPressedPad.get() == pad.getNumber())) {
-                                            p("! Fire slot by: " + pad);
-                                            apiManager.fireSlotAt(pad.getNumber());
-                                            pad.notifyControlConsumed();
-                                            data1OfLongPressedPad.set(-1);
-                                            return;
-                                        } else {
-                                            p("skipping pad which was longpress: " + pad);
-                                        }
-                                    }
-                            );
-                    break;
-
-                }
-
     }
 
     private boolean isMidiUsedForPageChange(ShortMidiMessage msg) {

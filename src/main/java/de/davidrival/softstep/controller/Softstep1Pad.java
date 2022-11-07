@@ -86,8 +86,6 @@ public class Softstep1Pad extends SimpleConsolePrinter {
 
             setPressure(calcMaxPressureOfDirections(this.directions));
 
-            // TODO for simple footOn Off there must only count if its over until its back to 0 again
-
             gestures.check(pressure);
         }
     }

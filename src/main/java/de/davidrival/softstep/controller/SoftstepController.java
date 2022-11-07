@@ -79,11 +79,11 @@ public class SoftstepController extends SimpleConsolePrinter {
 //        If no controlls where used on the device just exit
         if (pushedDownPads.size() == 0) return;
 
-                hasControllsForPages.stream()
-                        .filter(c -> c.getPage().equals(pages.getCurrentPage()))
-                        .findFirst().ifPresent(
-                                p -> p.processControlls(pushedDownPads)
-                        );
+            hasControllsForPages.stream()
+                    .filter(c -> c.getPage().equals(pages.getCurrentPage()))
+                    .findFirst().ifPresent(
+                            p -> p.processControlls(pushedDownPads)
+                    );
     }
 
     private boolean isMidiUsedForPageChange(ShortMidiMessage msg) {

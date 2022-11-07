@@ -1,15 +1,20 @@
 package de.davidrival.softstep.controller;
 
-import com.bitwig.extension.controller.api.ControllerHost;
 import de.davidrival.softstep.api.ApiManager;
 import de.davidrival.softstep.api.SimpleConsolePrinter;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 
 public class ClipControlls extends SimpleConsolePrinter implements HasControllsForPage {
+
+    public static final int PAD_NUM_UP = 9;
+    public static final int PAD_NUM_DOWN = 4;
+    public static final int PAD_NUM_LEFT = 7;
+    public static final int PAGE_NUM_RIGHT = 8;
 
     public ClipControlls(Page page, ApiManager apiManager) {
         super(apiManager.getHost());
@@ -25,46 +30,95 @@ public class ClipControlls extends SimpleConsolePrinter implements HasControllsF
         return this.page;
     }
 
+
+    private final Predicate<Softstep1Pad> arePadsForNavigation = (pad -> pad.getNumber() == PAD_NUM_DOWN
+                                                            || pad.getNumber() == PAD_NUM_LEFT
+                                                            || pad.getNumber() == PAGE_NUM_RIGHT
+                                                            || pad.getNumber() == PAD_NUM_UP
+    );
+
     /** Keeps track of the Pad index which has been pressed long in order not to get confused by
      * the usual pressed ones */
-    private final AtomicInteger data1OfLongPressedPad = new AtomicInteger(-1);
+    final AtomicInteger data1OfLongPressedPad = new AtomicInteger(-1);
 
     @Override
     public void processControlls(List<Softstep1Pad> pushedDownPads) {
-                        List<Softstep1Pad> padsToConsiderForCLipLaunch = pushedDownPads.stream()
-                        // In case of firing up clips their must not pads with higher
-                        // indexes as there are scenes or bitwig will complain and shutdown
-                        .filter(pad -> pad.getNumber() < ApiManager.NUM_SCENES)
-                        .collect(Collectors.toList());
+                List<Softstep1Pad> padsToConsiderForNavigation = pushedDownPads.stream()
+                .filter(arePadsForNavigation)
+                .filter(p -> p.gestures().isFootOnThanFootOff())
+                .collect(Collectors.toList());
+
+        padsToConsiderForNavigation.stream()
+                .filter(p -> p.gestures().isFootOnThanFootOff())
+                .forEach(p -> {
+                    switch (p.getNumber()){
+                        case PAD_NUM_UP:
+                            apiManager.clipSlotBankUp();
+                            return;
+                        case PAD_NUM_DOWN:
+                            apiManager.clipSlotBankDown();
+                            break;
+                        case PAD_NUM_LEFT:
+                            apiManager.clipSlotBankLeft();
+                            break;
+                        case PAGE_NUM_RIGHT:
+                            apiManager.clipSlotBankRight();
+                            break;
+                    }
+                });
+
+
+
+                List<Softstep1Pad> padsToConsiderForCLipLaunch = pushedDownPads.stream()
+                // In case of firing up clips they must not pads with higher
+                // indexes as there are scenes or bitwig will complain and shutdown
+                        // If done this way implies the layout, clip pads are from 1 to 4
+                .filter(pad -> pad.getNumber() < ApiManager.NUM_SCENES)
+                .collect(Collectors.toList());
+
                 //// LONG PRESS STUFF
                 ///// First Check long press
+                // only if the pressure is almost 0 a prior long pressed pad is given free for
+                // other clip launching tasks
+                padsToConsiderForCLipLaunch.stream()
+                        .filter(p -> p.getNumber() == data1OfLongPressedPad.get())
+                                .forEach(p -> {
+                                    if (p.getPressure() < 2) {
+                                        data1OfLongPressedPad.set(-1);
+                                    }
+                                });
+
+
                 padsToConsiderForCLipLaunch.stream()
                         .filter(p -> p.gestures().isLongPress())
                         .forEach(pad -> {
                                     if (pad.gestures().isLongPress()) {
-                                        apiManager
-                                                .getSlotBank()
-                                                .getItemAt(pad.getNumber())
-                                                .deleteObject();
+                                        apiManager.deleteSlotAt(pad.getNumber());
 
                                         data1OfLongPressedPad.set(pad.getNumber());
 
                                         pad.notifyControlConsumed();
+
                                         p("! Delete slot by: " + pad);
+
                                         return;
                                     }
 
                                 }
                         );
-                ///// Foot On Offs for clip launch
+                ///// Foot Ons for clip launch
                 padsToConsiderForCLipLaunch.stream()
                             .filter(p -> p.gestures().isFootOn())
                             .forEach(pad -> {
                                         if (!(data1OfLongPressedPad.get() == pad.getNumber())) {
-                                            p("! Fire slot by: " + pad);
                                             apiManager.fireSlotAt(pad.getNumber());
+
                                             pad.notifyControlConsumed();
+
                                             data1OfLongPressedPad.set(-1);
+
+                                            p("! Fire slot by: " + pad);
+
                                             return;
                                         } else {
                                             p("skipping pad which was longpress: " + pad);

@@ -21,6 +21,8 @@ public class ApiManager {
     public static final int NUM_SENDS = 0;
     public static final int NUM_SCENES = 4;
     public static final boolean SHOW_CLIP_LAUNCHER_FEEDBACK = true;
+    public static final int USER_CONTROL_PARAMETER_RESOLUTION = 128;
+    public static final int CLIPS_CONTENT_CLEANUP_PERIOD = 5000;
 
     private Timer timer;
 
@@ -28,6 +30,9 @@ public class ApiManager {
 
     private final ClipLauncherSlotBank slotBank;
     private UserControlBank userControls;
+    private TrackBank trackBank;
+    private Track track;
+
     private SoftstepController softstepController;
     private ControllerHost host;
 
@@ -35,9 +40,9 @@ public class ApiManager {
 
         this.host = host;
         this.userControls = host.createUserControls(AMOUNT_USER_CONTROLS);
-        TrackBank trackBank = host.createMainTrackBank(NUM_TRACKS, NUM_SENDS, NUM_SCENES);
+        this.trackBank = host.createMainTrackBank(NUM_TRACKS, NUM_SENDS, NUM_SCENES);
         trackBank.setShouldShowClipLauncherFeedback(SHOW_CLIP_LAUNCHER_FEEDBACK);
-        Track track = trackBank.getItemAt(0);
+        track = trackBank.getItemAt(0);
         this.slotBank = track.clipLauncherSlotBank();
         this.slotBank.addHasContentObserver(this::contentInSlotBankChanged);
 
@@ -45,19 +50,51 @@ public class ApiManager {
                         , isQueued));
 
         /* Import or some content updates are not correct */
-        runClipCleanupTaskEach(3000);
+        runClipCleanupTaskEach(CLIPS_CONTENT_CLEANUP_PERIOD);
     }
 
     public void fireSlotAt(int number) {
-        getSlotBank()
+        slotBank
                 .launch(number);
+    }
+
+    public void deleteSlotAt(int number) {
+        slotBank
+                .getItemAt(number)
+                .deleteObject();
+    }
+
+    public void setValueOfUserControl(int index, int value) {
+        Parameter parameter = userControls
+                .getControl(index);
+        parameter.set(value, USER_CONTROL_PARAMETER_RESOLUTION);
+    }
+
+    public void clipSlotBankUp() {
+        p("clipSlotBankUp");
+        trackBank.scrollForwards();
+        track.selectInMixer();
+    }
+
+    public void clipSlotBankDown() {
+        p("clipSlotBankDown");
+        trackBank.scrollBackwards();
+        track.selectInMixer();
+//        if(trackBank.canScrollChannelsUp().get()) {
+//            trackBank.scrollChannelsUp();
+//        }
+    }
+
+    public void clipSlotBankLeft() {
+        p("clipSlotBankLeft");
+        trackBank.scrollByPages(-1);
 
     }
 
-    public void setValueOfUserControl(int number, int value) {
-        Parameter parameter = getUserControls()
-                .getControl(number);
-        parameter.set(value, 128);
+    public void clipSlotBankRight() {
+        p("clipSlotBankRight");
+        trackBank.scrollByPages(1);
+
     }
 
     /**

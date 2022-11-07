@@ -33,12 +33,12 @@ public enum Page {
                 new LedStates(LedColor.YELLOW, LedLight.OFF),
                 new LedStates(LedColor.YELLOW, LedLight.OFF),
                 new LedStates(LedColor.YELLOW, LedLight.OFF),
+                new LedStates(LedColor.GREEN, LedLight.ON),
                 new LedStates(LedColor.YELLOW, LedLight.OFF),
                 new LedStates(LedColor.YELLOW, LedLight.OFF),
-                new LedStates(LedColor.YELLOW, LedLight.OFF),
-                new LedStates(LedColor.YELLOW, LedLight.OFF),
-                new LedStates(LedColor.YELLOW, LedLight.OFF),
-                new LedStates(LedColor.YELLOW, LedLight.OFF))
+                new LedStates(LedColor.YELLOW, LedLight.ON),
+                new LedStates(LedColor.RED, LedLight.ON),
+                new LedStates(LedColor.GREEN, LedLight.ON))
             )
     );
 

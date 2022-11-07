@@ -4,6 +4,7 @@ import com.bitwig.extension.api.util.midi.ShortMidiMessage;
 import com.bitwig.extension.controller.api.ControllerHost;
 import com.bitwig.extension.controller.api.Parameter;
 import de.davidrival.softstep.api.ApiManager;
+import de.davidrival.softstep.api.SimpleConsolePrinter;
 import de.davidrival.softstep.hardware.SoftstepHardware;
 
 import de.davidrival.softstep.hardware.SoftstepHardwareBase;
@@ -16,13 +17,13 @@ import java.util.stream.Collectors;
 
 @Getter
 @Setter
-public class SoftstepController {
+public class SoftstepController extends SimpleConsolePrinter {
 
     public static final int NAV_PAD_PUSHED_DOWN_TRESHOLD = 2;
 
     private SoftstepHardware softstepHardware;
 
-    final Softstep1Controls controls;
+    final ControlsManager controls;
 
     private ApiManager apiManager;
 
@@ -33,13 +34,15 @@ public class SoftstepController {
     public SoftstepController(
             ControllerPages controllerPages
             , SoftstepHardware softstepHardware
-            , ApiManager apiManager) {
+            , ApiManager apiManager
+            , ControllerHost hostOrNull) {
 
+        super(hostOrNull);
         this.pages = controllerPages;
         this.softstepHardware = softstepHardware;
         this.apiManager = apiManager;
         this.apiManager.setController(this);
-        this.controls = new Softstep1Controls(apiManager.getHost());
+        this.controls = new ControlsManager(null);
     }
 
     public void display() {
@@ -55,13 +58,13 @@ public class SoftstepController {
         // update datastructure of softstep pads
         controls.update(msg);
 
-        triggerBitwigIfControlsWereUsed(controls);
+        triggerBitwigIfControlsUsed(controls);
     }
 
-    private void triggerBitwigIfControlsWereUsed(Softstep1Controls controls) {
+    private void triggerBitwigIfControlsUsed(ControlsManager controls) {
         List<Softstep1Pad> pushedDownPads = controls.getPads()
                 .stream()
-                .filter(pad -> pad.hasChanged)
+                .filter(pad -> pad.isUsed())
                 .collect(Collectors.toList());
 
 //        If no controlls where used on the device just exit
@@ -73,14 +76,14 @@ public class SoftstepController {
                             Parameter param = apiManager
                                     .getUserControls()
                                     .getControl(pad.getNumber());
-                            param.set(pad.pressure, 128);
-                            pad.hasChanged = false;
+                            param.set(pad.getPressure(), 128);
+                            pad.notifyControlConsumed();
                         }
                 );
                 break;
             case CLIP:
                 pushedDownPads.stream()
-                        // In case of firing up clips ther must not pads with higher
+                        // In case of firing up clips their must not pads with higher
                         // indexes as there are scenes or bitwig will complain and shutdown
                         .filter(pad -> pad.getNumber() <= ApiManager.NUM_SCENES)
                         .forEach(pad -> {
@@ -91,12 +94,12 @@ public class SoftstepController {
                                         .getItemAt(pad.getNumber())
                                         .deleteObject();
                                 pad.hasLongPress = false;
-                                pad.hasChanged = false;
+                                pad.notifyControlConsumed();
                             } else {
                                 apiManager
                                         .getSlotBank()
                                         .launch(pad.getNumber());
-                                pad.hasChanged = false;
+                                pad.notifyControlConsumed();
                             }
                         }
                 );
@@ -157,7 +160,4 @@ public class SoftstepController {
         softstepHardware.exit();
     }
 
-    public void p(String text) {
-        apiManager.getHost().println(text);
-    }
 }

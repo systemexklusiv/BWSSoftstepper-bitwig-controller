@@ -1,22 +1,22 @@
 package de.davidrival.softstep.controller;
 
-import de.davidrival.softstep.SoftstepperExtension;
+import com.bitwig.extension.controller.api.ControllerHost;
+import de.davidrival.softstep.api.SimpleConsolePrinter;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.ToString;
 
 import java.util.*;
 
-@Getter
-@Setter
+
 @ToString
-public class Softstep1Pad {
+public class Softstep1Pad extends SimpleConsolePrinter {
 
     private static final int LONG_PRESS_TIME = 350;
 
     // TODO use this for clips triggering and pressure for longpress and param controll
     private static final int FOOT_ON_PRESSURE_THRESHOLD = 40;
 
+    @Getter
     private final int number;
     /**
      * Each pad of the Softstep has 4 corners, I call them directions
@@ -24,25 +24,33 @@ public class Softstep1Pad {
      * WARNING: not clockwise, it is going left right - left right
      * Directions saves data2 for each of the corners per press
      * */
-    Map<Integer, Integer> directions;
+    @Getter
+    private Map<Integer, Integer> directions;
     /** The lowest cc data1 of the 4 corners of each pad */
     Integer minData1 = null;
     /** The highest cc data1 of the 4 corners of each pad */
     Integer maxData1 = null;
+
+    @Getter
     /** pressure saves the max of all directions each time a pad is pressed */
-    int pressure = 0;
+    private int pressure = 0;
 
     // TODO use this for clips triggering and pressure for longpress and param controll
     public boolean hasFootOn = false;
 
+    @Getter
     /** Flag which tells the Controller class to consider this Pad in triggerering something   */
-    public boolean hasChanged = false;
+    private boolean isBeingUsed = false;
 
     public boolean hasLongPress = false;
 
-    public Softstep1Pad(int number, Map<Integer, Integer> directions) {
+    private Gestures gestures;
+
+    public Softstep1Pad(int number, Map<Integer, Integer> directions, ControllerHost hostOrNull) {
+        super(hostOrNull);
         this.directions = directions;
         this.number = number;
+        this.gestures = new Gestures(hostOrNull);
         init();
     }
 
@@ -59,7 +67,7 @@ public class Softstep1Pad {
     Timer timer = new Timer();
     int deltaTime = 0;
     private void startLongPressTimer() {
-        SoftstepperExtension.host4All.println("startLongpress");
+        super.p("startLongpress");
         timer = new Timer();
         timer.schedule(new TimerTask() {
             @Override
@@ -80,57 +88,78 @@ public class Softstep1Pad {
         return data1 >= minData1 && data1 <= maxData1;
     }
 
-    public void setToDirections(int data1, int data2) {
+    /**
+     * Each Softstep Pad has 4 ( I call it so ) directions which allows
+     * to find out if one wants to press it left, right, up down for instance
+     * Each direction has a separate data1 adress. This method distrbutes the
+     * data accordingly.
+     *
+     * @param data1
+     * @param data2
+     */
+    public void update(int data1, int data2) {
         if (directions.get(data1) != data2) {
 
             ////// Set this flag so this control wil be considered
-            setHasChanged(true);
+            markControlUsed();
 
-            this.directions.put(data1, data2);
+            distributeToDirections(data1, data2);
 
-            setPressureFromAllDirections();
+            setPressure(calcMaxPressureOfDirections(this.directions));
 
             // TODO for simple footOn Off there must only count if its over until its back to 0 again
-
-//            if (pressure > FOOT_ON_PRESSURE_THRESHOLD) {
-//                hasFootOn = true;
-//            } else {
-//                hasFootOn = false;
-//            }
 
             checkLongPress();
         }
     }
 
+    private void distributeToDirections(int data1, int data2) {
+        this.directions.put(data1,data2);
+    }
+
+    /**
+     * The control determins based on user input if its being changed
+     * If so this method should be called
+     */
+    private void markControlUsed() {
+        this.isBeingUsed = true;
+    }
+
+    /**
+     * If this controls action has been used by the application the clients
+     * calls this method in order to notify this controller instance to be ready
+     * for more user input.
+     */
+    public void notifyControlConsumed() {
+        this.isBeingUsed = false;
+    }
+
     private void checkLongPress() {
         if(pressure > 10 ) {
             startLongPressTimer();
-            SoftstepperExtension.host4All.println("start longpress!");
+            p("start longpress!");
         } else {
             timer.cancel();
-            SoftstepperExtension.host4All.println("timer.cancel witch delta " + deltaTime);
+            p("timer.cancel witch delta " + deltaTime);
             if (deltaTime > LONG_PRESS_TIME) {
                 deltaTime = 0;
-                setHasLongPress(true);
+                hasLongPress = true;
             }
         }
     }
 
-    private int setPressureFromAllDirections() {
-        int maxPressureFromAllDirs = directions.entrySet().stream()
+    public int calcMaxPressureOfDirections(Map<Integer, Integer> dirs) {
+        return dirs.entrySet().stream()
                 .max(Map.Entry.comparingByValue()).map(Map.Entry::getValue)
                 .orElseThrow(NoSuchElementException::new);
-
-        setAccumulatedPressure(maxPressureFromAllDirs);
-
-        return maxPressureFromAllDirs;
     }
 
-
-    /** pressure saves the last data2 regardless which corner is pressed */
-    private void setAccumulatedPressure(int pressure) {
+    private void setPressure(int pressure) {
         this.pressure = pressure;
     }
 
+    public boolean isUsed() {
+        return isBeingUsed;
+    }
 }
 

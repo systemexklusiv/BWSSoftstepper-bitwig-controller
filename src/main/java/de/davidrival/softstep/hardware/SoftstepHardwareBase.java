@@ -2,7 +2,6 @@ package de.davidrival.softstep.hardware;
 
 import com.bitwig.extension.controller.api.MidiOut;
 import de.davidrival.softstep.controller.LedStates;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;

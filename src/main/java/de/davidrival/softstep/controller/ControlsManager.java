@@ -2,25 +2,26 @@ package de.davidrival.softstep.controller;
 
 import com.bitwig.extension.api.util.midi.ShortMidiMessage;
 import com.bitwig.extension.controller.api.ControllerHost;
+import de.davidrival.softstep.api.SimpleConsolePrinter;
 import de.davidrival.softstep.hardware.SoftstepHardwareBase;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 
 @Getter
 @Setter
-public class Softstep1Controls {
+public class ControlsManager extends SimpleConsolePrinter {
 
     static final int START_DATA_1_AT = 44;
     List<Softstep1Pad> pads;
 
     ControllerHost host;
-    public Softstep1Controls(ControllerHost host) {
+
+    public ControlsManager(ControllerHost hostOrNull) {
+        super(hostOrNull);
         pads = init();
-        this.host = host;
     }
 
     /**
@@ -51,7 +52,7 @@ public class Softstep1Controls {
             // the value is Data2 and initialized with -1
             tmpDirections.put(startCC + j, -1);
         }
-        return new Softstep1Pad(number, tmpDirections);
+        return new Softstep1Pad(number, tmpDirections, host);
     }
 
     public void update(ShortMidiMessage msg) {
@@ -65,7 +66,7 @@ public class Softstep1Controls {
                         p("-------------------------");
 
 
-                        pad.setToDirections(msg.getData1(), msg.getData2());
+                        pad.update(msg.getData1(), msg.getData2());
 
 
 
@@ -76,9 +77,6 @@ public class Softstep1Controls {
 
                     });
         }
-    }
-    public void p(String text) {
-        getHost().println(text);
     }
 }
 

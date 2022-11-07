@@ -19,7 +19,6 @@ public class SoftstepperExtension extends ControllerExtension
 
    SoftstepController softstepController;
 
-   public static ControllerHost host4All;
 
    protected SoftstepperExtension(final SoftstepperExtensionDefinition definition, final ControllerHost host)
    {
@@ -30,7 +29,6 @@ public class SoftstepperExtension extends ControllerExtension
    public void init()
    {
       final ControllerHost host = getHost();
-      host4All = getHost();
 
       transport = host.createTransport();
       midiIn = host.getMidiInPort(0);
@@ -47,12 +45,11 @@ public class SoftstepperExtension extends ControllerExtension
       softstepController = new SoftstepController(controllerPages
               , softstepHardware
               , apiManager
+              , host
       );
 
 
       softstepController.display();
-
-
 
 
       host.showPopupNotification("BWSSoftstepper Initialized");

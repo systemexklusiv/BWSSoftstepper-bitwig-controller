@@ -40,6 +40,12 @@
             <scope>test</scope>
         </dependency>
 
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>4.8.1</version>
+            <scope>test</scope>
+        </dependency>
 
     </dependencies>
 
@@ -52,8 +58,8 @@
                 <configuration>
                     <optimize>true</optimize>
                     <fork>true</fork>
-                    <source>1.8</source>
-                    <target>1.8</target>
+                    <source>11</source>
+                    <target>11</target>
                     <encoding>UTF-8</encoding>
                     <maxmem>1024m</maxmem>
                 </configuration>

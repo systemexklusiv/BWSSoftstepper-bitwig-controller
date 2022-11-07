@@ -1,6 +1,6 @@
 package de.davirival.hardware;
 
-import de.davidrival.softstep.controller.ControlsManager;
+import de.davidrival.softstep.controller.Controlls;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -11,7 +11,7 @@ public class TestSoftstep1 {
 
     @Test
     public void isInitWorking() {
-        ControlsManager softstep1 = new ControlsManager(null);
+        Controlls softstep1 = new Controlls(null);
 
         Assert.assertEquals(10, softstep1.getPads().size());
         Assert.assertEquals(Optional.of(40).get(), softstep1

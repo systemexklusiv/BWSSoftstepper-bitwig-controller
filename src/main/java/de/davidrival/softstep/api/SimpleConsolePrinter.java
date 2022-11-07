@@ -20,7 +20,16 @@ public class SimpleConsolePrinter {
                 System.out::println);
     }
 
+    public void e(String text) {
+        host.ifPresentOrElse(h -> h.errorln(text),
+                System.err::println);
+    }
+
     public void setHost(ControllerHost host) {
         this.host = Optional.ofNullable(host);
+    }
+
+    public ControllerHost getHost() {
+            return host.orElseGet(null);
     }
 }

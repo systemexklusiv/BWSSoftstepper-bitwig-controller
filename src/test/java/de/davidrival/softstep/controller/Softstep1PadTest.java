@@ -17,11 +17,11 @@ public class Softstep1PadTest {
 
     List<Softstep1Pad> pads;
     Softstep1Pad padUnderTest;
-    ControlsManager controls;
+    Controlls controls;
 
     @Before
     public void setup() {
-        controls = new ControlsManager(null);
+        controls = new Controlls(null);
         pads = controls.init();
         Map<Integer, Integer> dirs = new HashMap<>(4);
         dirs.put(0,42);

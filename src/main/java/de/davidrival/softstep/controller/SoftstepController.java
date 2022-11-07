@@ -12,6 +12,9 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 
@@ -23,7 +26,7 @@ public class SoftstepController extends SimpleConsolePrinter {
 
     private SoftstepHardware softstepHardware;
 
-    final ControlsManager controls;
+    final Controlls controls;
 
     private ApiManager apiManager;
 
@@ -42,7 +45,7 @@ public class SoftstepController extends SimpleConsolePrinter {
         this.softstepHardware = softstepHardware;
         this.apiManager = apiManager;
         this.apiManager.setController(this);
-        this.controls = new ControlsManager(null);
+        this.controls = new Controlls(controllerHost);
     }
 
     public void display() {
@@ -61,7 +64,9 @@ public class SoftstepController extends SimpleConsolePrinter {
         triggerBitwigIfControlsUsed(controls);
     }
 
-    private void triggerBitwigIfControlsUsed(ControlsManager controls) {
+    AtomicInteger data1OfLongPressedPad = new AtomicInteger(-1);
+
+    private void triggerBitwigIfControlsUsed(Controlls controls) {
         List<Softstep1Pad> pushedDownPads = controls.getPads()
                 .stream()
                 .filter(pad -> pad.isUsed())
@@ -82,29 +87,52 @@ public class SoftstepController extends SimpleConsolePrinter {
                 );
                 break;
             case CLIP:
-                pushedDownPads.stream()
+
+                List<Softstep1Pad> padsToConsider = pushedDownPads.stream()
                         // In case of firing up clips their must not pads with higher
                         // indexes as there are scenes or bitwig will complain and shutdown
-                        .filter(pad -> pad.getNumber() <= ApiManager.NUM_SCENES)
+                        .filter(pad -> pad.getNumber() < ApiManager.NUM_SCENES)
+                        .collect(Collectors.toList());
+                ///// First Check long press
+                padsToConsider.stream()
+                        .filter(p -> p.gestures().isLongPress())
                         .forEach(pad -> {
-                            p("! Fire slot by: " + pad);
-                            if (pad.hasLongPress) {
-                                apiManager
-                                        .getSlotBank()
-                                        .getItemAt(pad.getNumber())
-                                        .deleteObject();
-                                pad.hasLongPress = false;
-                                pad.notifyControlConsumed();
-                            } else {
-                                apiManager
-                                        .getSlotBank()
-                                        .launch(pad.getNumber());
-                                pad.notifyControlConsumed();
-                            }
-                        }
-                );
-                break;
-        }
+                                    if (pad.gestures().isLongPress()) {
+                                        apiManager
+                                                .getSlotBank()
+                                                .getItemAt(pad.getNumber())
+                                                .deleteObject();
+
+                                        data1OfLongPressedPad.set(pad.getNumber());
+
+                                        pad.notifyControlConsumed();
+                                        p("! Delete slot by: " + pad);
+                                        return;
+                                    }
+
+                                }
+                        );
+                ///// Foot On Offs for clip launch
+                padsToConsider.stream()
+                            .filter(p -> p.gestures().isFootOnThanFootOff())
+                            .forEach(pad -> {
+                                        if (!(data1OfLongPressedPad.get() == pad.getNumber())) {
+                                            p("! Fire slot by: " + pad);
+                                            apiManager
+                                                    .getSlotBank()
+                                                    .launch(pad.getNumber());
+                                            pad.notifyControlConsumed();
+                                            data1OfLongPressedPad.set(-1);
+                                            return;
+                                        } else {
+                                            p("skipping pad which was longpress: " + pad);
+                                        }
+                                    }
+                            );
+                    break;
+
+                }
+
     }
 
     private boolean isMidiUsedForPageChange(ShortMidiMessage msg) {
@@ -136,15 +164,15 @@ public class SoftstepController extends SimpleConsolePrinter {
      * Needed if one wants to switch to another mode. Afterwards it sends out the
      * changed led states to the control for the acive page
      *
-     * @param page the page where the LED is to be set (not importand if active or not
-     * @param index the index of the controller ( e.g. the slotindex if used in clip mode)
+     * @param page      the page where the LED is to be set (not importand if active or not
+     * @param index     the index of the controller ( e.g. the slotindex if used in clip mode)
      * @param ledStates the led states, meaninf color and flashin mode
      */
     public void updateLedStates(Page page, int index, LedStates ledStates) {
         // First write to the states of each page
         // Doesn't matter is currently active or not
         // Needed if one wants to switch to another mode
-        pages.distributeLedStates(page,index,ledStates);
+        pages.distributeLedStates(page, index, ledStates);
 
 //        p(" >>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ");
 //        p(Page.CLIP.ledStates.toString());

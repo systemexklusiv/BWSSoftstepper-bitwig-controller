@@ -40,8 +40,8 @@ public class ApiManager {
     }
 
     public void contentInSlotBankChanged(int idx, boolean onOff) {
+        p("! content ! slotIdx" + idx + " clip? " + onOff);
         softstepController.updateLedStates(Page.CLIP, idx, onOff ? STOP : OFF);
-//        p("! content ! " + onOff);
     }
 
     public void playbackStateChanged(int slotIndex, ApiManager.PLAYBACK_EVENT playbackEvent, boolean isQueued) {

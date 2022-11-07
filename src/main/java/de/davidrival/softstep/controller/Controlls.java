@@ -12,15 +12,16 @@ import java.util.*;
 
 @Getter
 @Setter
-public class ControlsManager extends SimpleConsolePrinter {
+public class Controlls extends SimpleConsolePrinter {
 
     static final int START_DATA_1_AT = 44;
     List<Softstep1Pad> pads;
 
     ControllerHost host;
 
-    public ControlsManager(ControllerHost hostOrNull) {
+    public Controlls(ControllerHost hostOrNull) {
         super(hostOrNull);
+        this.host = hostOrNull;
         pads = init();
     }
 
@@ -60,10 +61,10 @@ public class ControlsManager extends SimpleConsolePrinter {
             pads.stream().filter(pad -> pad.inRange(msg.getData1()))
                     .findFirst().ifPresent(pad -> {
 
-                        p("-------------------------");
-                        p("incoming midi: " + msg);
-                        p("matched pad: " + pad);
-                        p("-------------------------");
+//                        p("-------------------------");
+//                        p("incoming midi: " + msg);
+//                        p("matched pad: " + pad);
+//                        p("-------------------------");
 
 
                         pad.update(msg.getData1(), msg.getData2());

@@ -3,6 +3,7 @@ package de.davidrival.softstep.controller;
 import com.bitwig.extension.controller.api.ControllerHost;
 import de.davidrival.softstep.api.SimpleConsolePrinter;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.ToString;
 
 import java.util.*;
@@ -10,11 +11,6 @@ import java.util.*;
 
 @ToString
 public class Softstep1Pad extends SimpleConsolePrinter {
-
-    private static final int LONG_PRESS_TIME = 350;
-
-    // TODO use this for clips triggering and pressure for longpress and param controll
-    private static final int FOOT_ON_PRESSURE_THRESHOLD = 40;
 
     @Getter
     private final int number;
@@ -25,7 +21,7 @@ public class Softstep1Pad extends SimpleConsolePrinter {
      * Directions saves data2 for each of the corners per press
      * */
     @Getter
-    private Map<Integer, Integer> directions;
+    private final Map<Integer, Integer> directions;
     /** The lowest cc data1 of the 4 corners of each pad */
     Integer minData1 = null;
     /** The highest cc data1 of the 4 corners of each pad */
@@ -35,15 +31,11 @@ public class Softstep1Pad extends SimpleConsolePrinter {
     /** pressure saves the max of all directions each time a pad is pressed */
     private int pressure = 0;
 
-    // TODO use this for clips triggering and pressure for longpress and param controll
-    public boolean hasFootOn = false;
-
     @Getter
     /** Flag which tells the Controller class to consider this Pad in triggerering something   */
     private boolean isBeingUsed = false;
 
-    public boolean hasLongPress = false;
-
+    @Setter
     private Gestures gestures;
 
     public Softstep1Pad(int number, Map<Integer, Integer> directions, ControllerHost hostOrNull) {
@@ -64,19 +56,6 @@ public class Softstep1Pad extends SimpleConsolePrinter {
                 .orElseThrow(NoSuchElementException::new);
     }
 
-    Timer timer = new Timer();
-    int deltaTime = 0;
-    private void startLongPressTimer() {
-        super.p("startLongpress");
-        timer = new Timer();
-        timer.schedule(new TimerTask() {
-            @Override
-            public void run() {
-               deltaTime += 1;
-            }
-        }, 0, 1);
-
-    }
 
     /**
      * Find out if a given data1 is in range of this pad which ist build up of 4 CCs
@@ -109,7 +88,7 @@ public class Softstep1Pad extends SimpleConsolePrinter {
 
             // TODO for simple footOn Off there must only count if its over until its back to 0 again
 
-            checkLongPress();
+            gestures.check(pressure);
         }
     }
 
@@ -131,22 +110,11 @@ public class Softstep1Pad extends SimpleConsolePrinter {
      * for more user input.
      */
     public void notifyControlConsumed() {
+        this.gestures.setLongPress(false);
         this.isBeingUsed = false;
     }
 
-    private void checkLongPress() {
-        if(pressure > 10 ) {
-            startLongPressTimer();
-            p("start longpress!");
-        } else {
-            timer.cancel();
-            p("timer.cancel witch delta " + deltaTime);
-            if (deltaTime > LONG_PRESS_TIME) {
-                deltaTime = 0;
-                hasLongPress = true;
-            }
-        }
-    }
+
 
     public int calcMaxPressureOfDirections(Map<Integer, Integer> dirs) {
         return dirs.entrySet().stream()
@@ -160,6 +128,10 @@ public class Softstep1Pad extends SimpleConsolePrinter {
 
     public boolean isUsed() {
         return isBeingUsed;
+    }
+
+    public Gestures gestures() {
+        return gestures;
     }
 }
 

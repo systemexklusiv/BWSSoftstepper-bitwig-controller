@@ -21,11 +21,13 @@ public class Gestures extends SimpleConsolePrinter {
     @Setter
     private boolean isLongPress = false;
 
+    @Getter
+    private boolean isFootOn = false;
+
     private int footOnOffCounter = 0;
 
     public Gestures(ControllerHost hostOrNull) {
         super(hostOrNull);
-
         gestureTimer = new GestureTimer();
     }
 
@@ -35,6 +37,9 @@ public class Gestures extends SimpleConsolePrinter {
 
     protected void check(int pressure) {
         this.isLongPress = checkLongPress(pressure);
+        // TODO fix longpress - I give up for now therefore always false
+//        this.isLongPress = false;
+        this.isFootOn = checkFootOn(pressure);
         this.isFootOnThanFootOff = checkFootOnThanFootOff(pressure);
     }
 

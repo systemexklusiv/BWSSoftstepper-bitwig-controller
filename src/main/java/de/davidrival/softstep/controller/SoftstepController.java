@@ -78,10 +78,7 @@ public class SoftstepController extends SimpleConsolePrinter {
         switch (pages.getCurrentPage()) {
             case CTRL:
                 pushedDownPads.forEach(pad -> {
-                            Parameter param = apiManager
-                                    .getUserControls()
-                                    .getControl(pad.getNumber());
-                            param.set(pad.getPressure(), 128);
+                            apiManager.setValueOfUserControl(pad.getNumber(), pad.getPressure());
                             pad.notifyControlConsumed();
                         }
                 );
@@ -93,6 +90,7 @@ public class SoftstepController extends SimpleConsolePrinter {
                         // indexes as there are scenes or bitwig will complain and shutdown
                         .filter(pad -> pad.getNumber() < ApiManager.NUM_SCENES)
                         .collect(Collectors.toList());
+                //// LONG PRESS STUFF
                 ///// First Check long press
                 padsToConsider.stream()
                         .filter(p -> p.gestures().isLongPress())
@@ -114,13 +112,11 @@ public class SoftstepController extends SimpleConsolePrinter {
                         );
                 ///// Foot On Offs for clip launch
                 padsToConsider.stream()
-                            .filter(p -> p.gestures().isFootOnThanFootOff())
+                            .filter(p -> p.gestures().isFootOn())
                             .forEach(pad -> {
                                         if (!(data1OfLongPressedPad.get() == pad.getNumber())) {
                                             p("! Fire slot by: " + pad);
-                                            apiManager
-                                                    .getSlotBank()
-                                                    .launch(pad.getNumber());
+                                            apiManager.fireSlotAt(pad.getNumber());
                                             pad.notifyControlConsumed();
                                             data1OfLongPressedPad.set(-1);
                                             return;

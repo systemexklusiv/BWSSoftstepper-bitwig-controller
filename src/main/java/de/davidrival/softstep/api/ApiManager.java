@@ -5,6 +5,10 @@ import de.davidrival.softstep.controller.Page;
 import de.davidrival.softstep.controller.SoftstepController;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.util.Timer;
+import java.util.TimerTask;
+
 import static de.davidrival.softstep.api.ApiManager.PLAYBACK_EVENT.*;
 import static de.davidrival.softstep.controller.Page.CLIP_LED_STATES.*;
 
@@ -15,8 +19,10 @@ public class ApiManager {
     public static final int AMOUNT_USER_CONTROLS = 10;
     public static final int NUM_TRACKS = 1;
     public static final int NUM_SENDS = 0;
-    public static final int NUM_SCENES = 5;
+    public static final int NUM_SCENES = 4;
     public static final boolean SHOW_CLIP_LAUNCHER_FEEDBACK = true;
+
+    private Timer timer;
 
     public enum PLAYBACK_EVENT {STOPPED, PLAYING, RECORDING, PLAYBACK_STATE_NOT_KNOWN}
 
@@ -37,6 +43,42 @@ public class ApiManager {
 
         this.slotBank.addPlaybackStateObserver((slotIndex, playbackState, isQueued) -> playbackStateChanged(slotIndex, getApiEventByCallbackIndex(playbackState)
                         , isQueued));
+
+        /* Import or some content updates are not correct */
+        runClipCleanupTaskEach(3000);
+    }
+
+    public void fireSlotAt(int number) {
+        getSlotBank()
+                .launch(number);
+
+    }
+
+    public void setValueOfUserControl(int number, int value) {
+        Parameter parameter = getUserControls()
+                .getControl(number);
+        parameter.set(value, 128);
+    }
+
+    /**
+     * checks for content in clip slots infinitly ond if absents sends explicitly a
+     * OFF LED at the specific point. This is a fix or sometimes LED get Stuck
+     * @param millis time the task repeats
+     */
+    private void runClipCleanupTaskEach(int millis) {
+        timer = new Timer();
+        int size = slotBank.getSizeOfBank();
+        timer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                for (int i = 0; i < size; i++) {
+                    ClipLauncherSlot slot = slotBank.getItemAt(i);
+                    if(!slot.hasContent().get()) {
+                        softstepController.updateLedStates(Page.CLIP, i,OFF);
+                    }
+                }
+            }
+        }, 5000, millis);
     }
 
     public void contentInSlotBankChanged(int idx, boolean onOff) {

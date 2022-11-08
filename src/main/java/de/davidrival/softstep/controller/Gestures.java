@@ -6,77 +6,44 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 
+import java.util.Map;
+
+@Getter
+@Setter
 @ToString
 public class Gestures extends SimpleConsolePrinter {
 
-    public static final int FOOT_ON_MIN_PRESSURE = 1;
+    private static final int AMOUNT_GESTURES_PER_PAD = 5;
 
-    public static final int LONG_PRESS_TIME = 500;
+    enum GestureOffsets {
+        pressure, footOn, longPress, doubleTrigger, incDec
+    };
 
-    @Getter
-    @Setter
-    private boolean isFootOnThanFootOff = false;
+    private int pressure  = 0;
 
-    @Getter
-    @Setter
-    private boolean isLongPress = false;
-
-    @Getter
     private boolean isFootOn = false;
 
-    private int footOnOffCounter = 0;
+    private boolean isLongPress = false;
+
+    private boolean isDoubleTrigger = false;
+
+    private int  isIncDec = 0;
+
 
     public Gestures(ControllerHost hostOrNull) {
         super(hostOrNull);
-        gestureTimer = new GestureTimer();
     }
 
-    @Getter
-    @Setter
-    private GestureTimer gestureTimer;
-
-    protected void check(int pressure) {
-        this.isLongPress = checkLongPress(pressure);
-        // TODO fix longpress - I give up for now therefore always false
-//        this.isLongPress = false;
-        this.isFootOn = checkFootOn(pressure);
-        this.isFootOnThanFootOff = checkFootOnThanFootOff(pressure);
+    public boolean set(Softstep1Pad pad) {
+        Map<Integer,Integer> dirs = pad.getDirections();
+        pressure = dirs.get(GestureOffsets.pressure.ordinal());
+        isFootOn = dirs.get(GestureOffsets.footOn.ordinal()) > 0;
+        isLongPress = dirs.get(GestureOffsets.longPress.ordinal()) > 0;
+        isDoubleTrigger = dirs.get(GestureOffsets.doubleTrigger.ordinal()) > 0;
+        pressure = dirs.get(GestureOffsets.incDec.ordinal());
+        return true;
     }
 
-    protected boolean checkLongPress(int pressure) {
-        if (checkFootOn(pressure)) {
-            if (!gestureTimer.isRunning()) {
-                gestureTimer.start();
-            }
-            if (gestureTimer.getDeltaTime() >= LONG_PRESS_TIME) {
-                gestureTimer.stop();
-                return true;
-            }
-        }
-        // if foot is lifted up before time reached cancel all
-        else  {
-                gestureTimer.stop();
-        }
-        return false;
-    }
 
-    protected boolean checkFootOnThanFootOff(int pressure) {
-        if (checkFootOn(pressure)) {
-            footOnOffCounter += 1;
-            return false;
-        } else {
-            if (footOnOffCounter >= 1) {
-                p(this.getClass().getSimpleName() + "  footOnAndOff detected!");
-                footOnOffCounter = 0;
-
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private boolean checkFootOn(int pressure) {
-        return pressure >= FOOT_ON_MIN_PRESSURE;
-    }
 
 }

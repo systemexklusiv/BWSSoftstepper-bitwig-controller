@@ -14,12 +14,7 @@ public class SoftstepHardwareBase {
     private final MidiOut midiOut;
 
     public static final int STATUS_BYTE = 176;
-    public static final int NAV_LEFT_DATA1 = 80;
-    public static final int NAV_RIGHT_DATA1 = 81;
-    public static final int NAV_PAD_PUSHED_DOWN_TRESHOLD = 2;
-
-
-
+    public static final int NAVIGATION_DATA1 = 100;
 
     public SoftstepHardwareBase(MidiOut midiOut) {
         this.midiOut = midiOut;
@@ -27,18 +22,19 @@ public class SoftstepHardwareBase {
     }
 
     public void init() {
-        midiOut.sendSysex("f0 00 1b 48 7a 01 00 00 00 00 00 00 00 00 00 00 00 01 00 09 00 0b 2b 3a 00 10 04 01 00 00 00 00 00 00 00 2f 7e 00 00 00 00 02 f7"); //Standalone
-        midiOut.sendSysex("f0 00 1b 48 7a 01 00 00 00 00 00 00 00 00 00 00 00 01 00 09 00 0b 2b 3a 00 10 03 00 00 00 00 00 00 00 00 50 07 00 00 00 00 00 f7"); // Tether
-        midiOut.sendSysex("f0 00 1b 48 7a 01 00 00 00 00 00 00 00 00 00 00 00 01 00 04 00 05 08 25 01 20 00 00 7b 2c 00 00 00 0c f7"); // backlight
+//        midiOut.sendSysex("f0 00 1b 48 7a 01 00 00 00 00 00 00 00 00 00 00 00 01 00 09 00 0b 2b 3a 00 10 04 00 00 00 00 00 00 00 00 17 1f 00 00 00 00 00 f7"); // standalone - the controller determins gestures and midi mapping
+//        midiOut.sendSysex("f0 00 1b 48 7a 01 00 00 00 00 00 00 00 00 00 00 00 01 00 09 00 0b 2b 3a 00 10 04 01 00 00 00 00 00 00 00 2f 7e 00 00 00 00 02 f7"); // Hostmode eg the script controls everything
+//        midiOut.sendSysex("f0 00 1b 48 7a 01 00 00 00 00 00 00 00 00 00 00 00 01 00 09 00 0b 2b 3a 00 10 03 00 00 00 00 00 00 00 00 50 07 00 00 00 00 00 f7"); // Tether
+        midiOut.sendSysex("f0 00 1b 48 7a 01 00 00 00 00 00 00 00 00 00 00 00 01 00 04 00 05 08 25 01 20 00 00 7b 2c 00 00 00 0c f7"); // backlight on
     }
 
     public void exit() {
-        midiOut.sendSysex("f0 00 1b 48 7a 01 00 00 00 00 00 00 00 00 00 00 00 01 00 04 00 05 08 25 00 20 00 00 4c 1c 00 00 00 0c f7"); // backlight
+        midiOut.sendSysex("f0 00 1b 48 7a 01 00 00 00 00 00 00 00 00 00 00 00 01 00 04 00 05 08 25 00 20 00 00 4c 1c 00 00 00 0c f7"); // backlight off
         displayText("   ");
         resetLeds();
 
-        midiOut.sendSysex("f0 00 1b 48 7a 01 00 00 00 00 00 00 00 00 00 00 00 01 00 09 00 0b 2b 3a 00 10 04 00 00 00 00 00 00 00 00 17 1f 00 00 00 00 00 f7"); // standalone
-        midiOut.sendSysex("f0 00 1b 48 7a 01 00 00 00 00 00 00 00 00 00 00 00 01 00 09 00 0b 2b 3a 00 10 03 01 00 00 00 00 00 00 00 68 66 00 00 00 00 00 f7"); // tether
+//        midiOut.sendSysex("f0 00 1b 48 7a 01 00 00 00 00 00 00 00 00 00 00 00 01 00 09 00 0b 2b 3a 00 10 04 00 00 00 00 00 00 00 00 17 1f 00 00 00 00 00 f7"); // standalone - the controller determins gestures and midi mapping
+//        midiOut.sendSysex("f0 00 1b 48 7a 01 00 00 00 00 00 00 00 00 00 00 00 01 00 09 00 0b 2b 3a 00 10 03 01 00 00 00 00 00 00 00 68 66 00 00 00 00 00 f7"); // tether
     }
 
     public void drawLedAt(int index, LedStates ledStates) {

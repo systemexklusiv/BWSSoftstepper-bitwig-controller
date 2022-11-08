@@ -58,7 +58,7 @@ public class ClipControls extends SimpleConsolePrinter implements HasControllsFo
                 padsToConsiderForCLipLaunch.stream()
                         .filter(p -> p.getNumber() == data1OfLongPressedPad.get())
                                 .forEach(p -> {
-                                    if (p.getPressure() < 2) {
+                                    if (p.gestures().getPressure() < 2) {
                                         data1OfLongPressedPad.set(-1);
                                     }
                                 });
@@ -114,7 +114,7 @@ public class ClipControls extends SimpleConsolePrinter implements HasControllsFo
 
     private boolean processNavigationPads(List<Softstep1Pad> padsToConsiderForNavigation) {
         List<Softstep1Pad> navPads = padsToConsiderForNavigation.stream()
-                .filter(p -> p.gestures().isFootOnThanFootOff()).collect(Collectors.toList());
+                .filter(p -> p.gestures().isFootOn()).collect(Collectors.toList());
 
         for (Softstep1Pad p :  navPads) {
             switch (p.getNumber()){
@@ -138,7 +138,7 @@ public class ClipControls extends SimpleConsolePrinter implements HasControllsFo
     protected List<Softstep1Pad> getNavigationPads(List<Softstep1Pad> pushedDownPads) {
         List<Softstep1Pad> padsToConsiderForNavigation = pushedDownPads.stream()
         .filter(arePadsForNavigation)
-        .filter(p -> p.gestures().isFootOnThanFootOff())
+        .filter(p -> p.gestures().isFootOn())
         .collect(Collectors.toList());
         return padsToConsiderForNavigation;
     }

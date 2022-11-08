@@ -14,7 +14,6 @@ import java.util.*;
 @Setter
 public class Controls extends SimpleConsolePrinter {
 
-    static final int START_DATA_1_AT = 44;
     List<Softstep1Pad> pads;
 
     ControllerHost host;
@@ -25,20 +24,13 @@ public class Controls extends SimpleConsolePrinter {
         pads = init();
     }
 
-    /**
-     * Hardcoded init as the factory default Softstep is starting at CC data1 44
-     * and takes up 4 CCs per Pad, each corner (direktion) takes up one.
-     */
+
     public List<Softstep1Pad> init() {
-        // Unfortunaltely the internal layout of the softstep is crazy XD, it is like this:
-        // [40,48,56,64,72]
-        // [44,52,60,68,76]
-        // For grid controlling I create the structure manually therefore
         // Note to myself: its upside down because the labeling on the softstep start at the bottom left
 
         return  new ArrayList<>(Arrays.asList(
-                makePad(5,40), makePad(6,48), makePad(7,56), makePad(8,64), makePad(9,72),
-                makePad(0,44), makePad(1,52), makePad(2,60), makePad(3,68), makePad(4,76)
+                makePad(5,25), makePad(6,30), makePad(7,35), makePad(8,40), makePad(9,45),
+                makePad(0,0), makePad(1,5), makePad(2,10), makePad(3,15), makePad(4,20)
         ));
     }
 
@@ -47,8 +39,8 @@ public class Controls extends SimpleConsolePrinter {
      * @return a fresh and shiny pad
      */
     private Softstep1Pad makePad(int number, int startCC) {
-        Map<Integer, Integer> tmpDirections = new HashMap<>(4);
-        for (int j = 0; j < 4; j++) {
+        Map<Integer, Integer> tmpDirections = new HashMap<>(5);
+        for (int j = 0; j < 5; j++) {
             // Data1 is the key in the directions map,
             // the value is Data2 and initialized with -1
             tmpDirections.put(startCC + j, -1);

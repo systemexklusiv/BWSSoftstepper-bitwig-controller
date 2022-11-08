@@ -15,21 +15,16 @@ public class Softstep1Pad extends SimpleConsolePrinter {
     @Getter
     private final int number;
     /**
-     * Each pad of the Softstep has 4 corners, I call them directions
-     * fi. pad 1 left upper = 44, right upper = 45, left lower = 46, right lower = 47
-     * WARNING: not clockwise, it is going left right - left right
-     * Directions saves data2 for each of the corners per press
+     * Each pad of the Softstep has 5 different functions, I call them directions
      * */
     @Getter
     private final Map<Integer, Integer> directions;
     /** The lowest cc data1 of the 4 corners of each pad */
+    @Getter
     Integer minData1 = null;
     /** The highest cc data1 of the 4 corners of each pad */
-    Integer maxData1 = null;
-
     @Getter
-    /** pressure saves the max of all directions each time a pad is pressed */
-    private int pressure = 0;
+    Integer maxData1 = null;
 
     @Getter
     /** Flag which tells the Controller class to consider this Pad in triggerering something   */
@@ -84,9 +79,7 @@ public class Softstep1Pad extends SimpleConsolePrinter {
 
             distributeToDirections(data1, data2);
 
-            setPressure(calcMaxPressureOfDirections(this.directions));
-
-            gestures.check(pressure);
+            gestures.set(this);
         }
     }
 
@@ -118,10 +111,6 @@ public class Softstep1Pad extends SimpleConsolePrinter {
         return dirs.entrySet().stream()
                 .max(Map.Entry.comparingByValue()).map(Map.Entry::getValue)
                 .orElseThrow(NoSuchElementException::new);
-    }
-
-    private void setPressure(int pressure) {
-        this.pressure = pressure;
     }
 
     public boolean isUsed() {

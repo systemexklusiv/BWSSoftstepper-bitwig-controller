@@ -66,7 +66,7 @@ public class SoftstepController extends SimpleConsolePrinter {
 
         controls.update(msg);
 
-        triggerBitwigIfControlsUsed(controls);
+//        triggerBitwigIfControlsUsed(controls);
     }
 
     private void triggerBitwigIfControlsUsed(Controls controls) {
@@ -86,23 +86,22 @@ public class SoftstepController extends SimpleConsolePrinter {
     }
 
     private boolean isMidiUsedForPageChange(ShortMidiMessage msg) {
-        if (msg.getStatusByte() == SoftstepHardwareBase.STATUS_BYTE
-                && msg.getData2() > NAV_PAD_PUSHED_DOWN_TRESHOLD) {
+        if (msg.getStatusByte() == SoftstepHardwareBase.STATUS_BYTE) {
 
-            if (msg.getData1() == SoftstepHardwareBase.NAV_LEFT_DATA1) {
-                if (pages.getCurrentPage().pageIndex != Page.CLIP.pageIndex) {
-                    pages.setCurrentPage(Page.CLIP);
-                    display();
-                }
-                return true;
-            }
-            if (msg.getData1() == SoftstepHardwareBase.NAV_RIGHT_DATA1) {
-                if (pages.getCurrentPage().pageIndex != Page.CTRL.pageIndex) {
+            if (msg.getData1() == SoftstepHardwareBase.NAVIGATION_DATA1) {
+                if (pages.getCurrentPage().pageIndex == Page.CLIP.pageIndex) {
                     pages.setCurrentPage(Page.CTRL);
                     display();
+                    return true;
+                } else
+                if (pages.getCurrentPage().pageIndex != Page.CTRL.pageIndex) {
+                    pages.setCurrentPage(Page.CLIP);
+                    display();
+                    return true;
                 }
-                return true;
+
             }
+
         }
         return false;
     }

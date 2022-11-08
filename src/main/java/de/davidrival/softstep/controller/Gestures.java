@@ -14,10 +14,11 @@ import java.util.Map;
 public class Gestures extends SimpleConsolePrinter {
 
     private static final int AMOUNT_GESTURES_PER_PAD = 5;
+    public static final int OFF_THRESHOLD = 10;
 
     enum GestureOffsets {
         pressure, footOn, longPress, doubleTrigger, incDec
-    };
+    }
 
     private int pressure  = 0;
 
@@ -36,11 +37,27 @@ public class Gestures extends SimpleConsolePrinter {
 
     public boolean set(Softstep1Pad pad) {
         Map<Integer,Integer> dirs = pad.getDirections();
-        pressure = dirs.get(GestureOffsets.pressure.ordinal());
-        isFootOn = dirs.get(GestureOffsets.footOn.ordinal()) > 0;
-        isLongPress = dirs.get(GestureOffsets.longPress.ordinal()) > 0;
-        isDoubleTrigger = dirs.get(GestureOffsets.doubleTrigger.ordinal()) > 0;
-        pressure = dirs.get(GestureOffsets.incDec.ordinal());
+
+        this.pressure = dirs.get(GestureOffsets.pressure.ordinal());
+
+        if(isFootOn && this.pressure < OFF_THRESHOLD) {
+            dirs.put(GestureOffsets.footOn.ordinal(), 0);
+            isFootOn = false;
+        }
+        if(isLongPress && this.pressure < OFF_THRESHOLD) {
+            dirs.put(GestureOffsets.longPress.ordinal(), 0);
+            isLongPress = false;
+        }
+        if(isDoubleTrigger && this.pressure < OFF_THRESHOLD) {
+            dirs.put(GestureOffsets.doubleTrigger.ordinal(), 0);
+            isDoubleTrigger = false;
+        }
+
+        this.isFootOn = dirs.get(GestureOffsets.footOn.ordinal()) > OFF_THRESHOLD;
+        this.isLongPress = dirs.get(GestureOffsets.longPress.ordinal()) > OFF_THRESHOLD;
+        this.isDoubleTrigger = dirs.get(GestureOffsets.doubleTrigger.ordinal()) > OFF_THRESHOLD;
+        this.isIncDec = dirs.get(GestureOffsets.incDec.ordinal());
+
         return true;
     }
 

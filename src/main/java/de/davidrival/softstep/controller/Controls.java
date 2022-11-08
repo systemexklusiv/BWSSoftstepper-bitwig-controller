@@ -12,14 +12,14 @@ import java.util.*;
 
 @Getter
 @Setter
-public class Controlls extends SimpleConsolePrinter {
+public class Controls extends SimpleConsolePrinter {
 
     static final int START_DATA_1_AT = 44;
     List<Softstep1Pad> pads;
 
     ControllerHost host;
 
-    public Controlls(ControllerHost hostOrNull) {
+    public Controls(ControllerHost hostOrNull) {
         super(hostOrNull);
         this.host = hostOrNull;
         pads = init();

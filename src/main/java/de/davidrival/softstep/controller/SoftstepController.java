@@ -12,7 +12,6 @@ import lombok.Setter;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 
@@ -24,7 +23,7 @@ public class SoftstepController extends SimpleConsolePrinter {
 
     private SoftstepHardware softstepHardware;
 
-    final Controlls controls;
+    final Controls controls;
 
     private ApiManager apiManager;
 
@@ -45,10 +44,10 @@ public class SoftstepController extends SimpleConsolePrinter {
         this.softstepHardware = softstepHardware;
         this.apiManager = apiManager;
         this.apiManager.setController(this);
-        this.controls = new Controlls(apiManager.getHost());
+        this.controls = new Controls(apiManager.getHost());
 
         hasControllsForPages = new ArrayList<>();
-        HasControllsForPage clipControlls = new ClipControlls(Page.CLIP, apiManager);
+        HasControllsForPage clipControlls = new ClipControls(Page.CLIP, apiManager);
         HasControllsForPage userControlls = new UserControlls(Page.CTRL, apiManager);
         hasControllsForPages.add(clipControlls);
         hasControllsForPages.add(userControlls);
@@ -70,7 +69,7 @@ public class SoftstepController extends SimpleConsolePrinter {
         triggerBitwigIfControlsUsed(controls);
     }
 
-    private void triggerBitwigIfControlsUsed(Controlls controls) {
+    private void triggerBitwigIfControlsUsed(Controls controls) {
         List<Softstep1Pad> pushedDownPads = controls.getPads()
                 .stream()
                 .filter(pad -> pad.isUsed())

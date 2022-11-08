@@ -22,7 +22,7 @@ public class ApiManager {
     public static final int NUM_SCENES = 4;
     public static final boolean SHOW_CLIP_LAUNCHER_FEEDBACK = true;
     public static final int USER_CONTROL_PARAMETER_RESOLUTION = 128;
-    public static final int CLIPS_CONTENT_CLEANUP_PERIOD = 5000;
+    public static final int CLIPS_CONTENT_CLEANUP_PERIOD = 3000;
 
     private Timer timer;
 
@@ -108,11 +108,10 @@ public class ApiManager {
         timer.schedule(new TimerTask() {
             @Override
             public void run() {
+//                p(">>> running cleanup :-)");
                 for (int i = 0; i < size; i++) {
                     ClipLauncherSlot slot = slotBank.getItemAt(i);
-                    if(!slot.hasContent().get()) {
-                        softstepController.updateLedStates(Page.CLIP, i,OFF);
-                    }
+                        softstepController.updateLedStates(Page.CLIP, i,slot.hasContent().get() ? STOP :OFF);
                 }
             }
         }, 5000, millis);

@@ -66,7 +66,7 @@ public class SoftstepController extends SimpleConsolePrinter {
 
         controls.update(msg);
 
-//        triggerBitwigIfControlsUsed(controls);
+        triggerBitwigIfControlsUsed(controls);
     }
 
     private void triggerBitwigIfControlsUsed(Controls controls) {

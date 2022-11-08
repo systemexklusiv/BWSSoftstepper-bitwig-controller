@@ -51,23 +51,9 @@ public class ClipControls extends SimpleConsolePrinter implements HasControllsFo
 
         List<Softstep1Pad> padsToConsiderForCLipLaunch = getCLipLaunchPads(pushedDownPads);
 
-        //// LONG PRESS STUFF
-                ///// First Check long press
-                // only if the pressure is almost 0 a prior long pressed pad is given free for
-                // other clip launching tasks
-                padsToConsiderForCLipLaunch.stream()
-                        .filter(p -> p.getNumber() == data1OfLongPressedPad.get())
-                                .forEach(p -> {
-                                    if (p.gestures().getPressure() < 2) {
-                                        data1OfLongPressedPad.set(-1);
-                                    }
-                                });
-
-
                 padsToConsiderForCLipLaunch.stream()
                         .filter(p -> p.gestures().isLongPress())
                         .forEach(pad -> {
-                                    if (pad.gestures().isLongPress()) {
                                         apiManager.deleteSlotAt(pad.getNumber());
 
                                         data1OfLongPressedPad.set(pad.getNumber());
@@ -77,24 +63,33 @@ public class ClipControls extends SimpleConsolePrinter implements HasControllsFo
                                         p("! Delete slot by: " + pad);
 
                                         return;
-                                    }
-
                                 }
                         );
                 ///// Foot Ons for clip launch
                 padsToConsiderForCLipLaunch.stream()
                             .filter(p -> p.gestures().isFootOn())
                             .forEach(pad -> {
-                                        if (!(data1OfLongPressedPad.get() == pad.getNumber())) {
-                                            apiManager.fireSlotAt(pad.getNumber());
+                                        if ( !pad.gestures().isLongPress()) {
 
-                                            pad.notifyControlConsumed();
+                                            // need to do this to avoid triggering clip after deletong it
+                                            if (data1OfLongPressedPad.get() ==  pad.getNumber() ) {
+                                                data1OfLongPressedPad.set(-1);
+                                            }
 
-                                            data1OfLongPressedPad.set(-1);
+                                            else {
 
-                                            p("! Fire slot by: " + pad);
+                                                apiManager.fireSlotAt(pad.getNumber());
 
-                                            return;
+                                                pad.notifyControlConsumed();
+
+                                                data1OfLongPressedPad.set(-1);
+
+//                                            p("! Fire slot by: " + pad);
+                                            }
+
+
+
+
                                         } else {
                                             p("skipping pad which was longpress: " + pad);
                                         }

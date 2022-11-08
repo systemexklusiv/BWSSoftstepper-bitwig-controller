@@ -78,10 +78,9 @@ public class SoftstepperExtension extends ControllerExtension
    /** Called when we receive short MIDI message on port 0. */
    private void onMidi0(ShortMidiMessage msg) 
    {
-      getHost().println("--- incomming msg! ---");
-      getHost().println(msg.toString());
-      getHost().println("^^^^^^^^^^^^^^^^^^^^^^");
-
+//      getHost().println("--- incomming msg! ---");
+//      getHost().println(msg.toString());
+//      getHost().println("^^^^^^^^^^^^^^^^^^^^^^");
       softstepController.handleMidi(msg);
    }
 

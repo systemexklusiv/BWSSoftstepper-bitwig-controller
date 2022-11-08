@@ -101,7 +101,7 @@ public class Softstep1Pad extends SimpleConsolePrinter {
      * for more user input.
      */
     public void notifyControlConsumed() {
-        this.gestures.setLongPress(false);
+        this.gestures.reset(this);
         this.isBeingUsed = false;
     }
 

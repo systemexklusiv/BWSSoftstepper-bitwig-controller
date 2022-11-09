@@ -1,6 +1,6 @@
 package de.davidrival.softstep.controller;
 
-import com.bitwig.extension.controller.api.ControllerHost;
+import com.bitwig.extension.api.util.midi.ShortMidiMessage;
 import de.davidrival.softstep.api.ApiManager;
 import de.davidrival.softstep.api.SimpleConsolePrinter;
 

@@ -6,6 +6,8 @@ import de.davidrival.softstep.controller.SoftstepController;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -22,7 +24,7 @@ public class ApiManager {
     public static final int NUM_SCENES = 4;
     public static final boolean SHOW_CLIP_LAUNCHER_FEEDBACK = true;
     public static final int USER_CONTROL_PARAMETER_RESOLUTION = 128;
-    public static final int CLIPS_CONTENT_CLEANUP_PERIOD = 3000;
+    public static final int CLIPS_CONTENT_CLEANUP_PERIOD = 2000;
 
     private Timer timer;
 
@@ -33,6 +35,8 @@ public class ApiManager {
     private TrackBank trackBank;
     private Track track;
 
+    private final SceneBank sceneBank;
+
     private SoftstepController softstepController;
     private ControllerHost host;
 
@@ -41,16 +45,17 @@ public class ApiManager {
         this.host = host;
         this.userControls = host.createUserControls(AMOUNT_USER_CONTROLS);
         this.trackBank = host.createMainTrackBank(NUM_TRACKS, NUM_SENDS, NUM_SCENES);
+        this.sceneBank = trackBank.sceneBank();
         trackBank.setShouldShowClipLauncherFeedback(SHOW_CLIP_LAUNCHER_FEEDBACK);
         track = trackBank.getItemAt(0);
         this.slotBank = track.clipLauncherSlotBank();
         this.slotBank.addHasContentObserver(this::contentInSlotBankChanged);
 
         this.slotBank.addPlaybackStateObserver((slotIndex, playbackState, isQueued) -> playbackStateChanged(slotIndex, getApiEventByCallbackIndex(playbackState)
-                        , isQueued));
+                , isQueued));
 
         /* Import or some content updates are not correct */
-        runClipCleanupTaskEach(CLIPS_CONTENT_CLEANUP_PERIOD);
+         runClipCleanupTaskEach(CLIPS_CONTENT_CLEANUP_PERIOD);
     }
 
     public void fireSlotAt(int number) {
@@ -70,36 +75,34 @@ public class ApiManager {
         parameter.set(value, USER_CONTROL_PARAMETER_RESOLUTION);
     }
 
-    public void clipSlotBankUp() {
+    public void clipSlotBankDown() {
         p("clipSlotBankUp");
         trackBank.scrollForwards();
         track.selectInMixer();
     }
 
-    public void clipSlotBankDown() {
+    public void clipSlotBankUp() {
         p("clipSlotBankDown");
         trackBank.scrollBackwards();
         track.selectInMixer();
-//        if(trackBank.canScrollChannelsUp().get()) {
-//            trackBank.scrollChannelsUp();
-//        }
     }
 
     public void clipSlotBankLeft() {
         p("clipSlotBankLeft");
-        trackBank.scrollByPages(-1);
+        sceneBank.scrollByPages(-1);
 
     }
 
     public void clipSlotBankRight() {
         p("clipSlotBankRight");
-        trackBank.scrollByPages(1);
+        sceneBank.scrollByPages(1);
 
     }
 
     /**
      * checks for content in clip slots infinitly ond if absents sends explicitly a
      * OFF LED at the specific point. This is a fix or sometimes LED get Stuck
+     *
      * @param millis time the task repeats
      */
     private void runClipCleanupTaskEach(int millis) {
@@ -110,8 +113,10 @@ public class ApiManager {
             public void run() {
 //                p(">>> running cleanup :-)");
                 for (int i = 0; i < size; i++) {
-                    ClipLauncherSlot slot = slotBank.getItemAt(i);
-                        softstepController.updateLedStates(Page.CLIP, i,slot.hasContent().get() ? STOP :OFF);
+                    ClipLauncherSlot clipLauncherSlot = slotBank.getItemAt(i);
+                    if ( !clipLauncherSlot.hasContent().get() ){
+                        softstepController.updateLedStates(Page.CLIP, i, OFF);
+                    }
                 }
             }
         }, 5000, millis);
@@ -125,7 +130,7 @@ public class ApiManager {
     public void playbackStateChanged(int slotIndex, ApiManager.PLAYBACK_EVENT playbackEvent, boolean isQueued) {
 //        p("! playbackStateChanged ! slotIndex " + slotIndex + " playbackState " + playbackEvent.toString() + " isQueued " + isQueued);
         switch (playbackEvent) {
-             case STOPPED:
+            case STOPPED:
                 softstepController.updateLedStates(Page.CLIP, slotIndex, isQueued ? STOP_QUE : STOP);
                 break;
             case PLAYING:

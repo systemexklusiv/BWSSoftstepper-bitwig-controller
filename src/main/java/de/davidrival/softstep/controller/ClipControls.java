@@ -32,14 +32,10 @@ public class ClipControls extends SimpleConsolePrinter implements HasControllsFo
 
 
     private final Predicate<Softstep1Pad> arePadsForNavigation = (pad -> pad.getNumber() == PAD_NUM_DOWN
-                                                            || pad.getNumber() == PAD_NUM_LEFT
-                                                            || pad.getNumber() == PAGE_NUM_RIGHT
-                                                            || pad.getNumber() == PAD_NUM_UP
+            || pad.getNumber() == PAD_NUM_LEFT
+            || pad.getNumber() == PAGE_NUM_RIGHT
+            || pad.getNumber() == PAD_NUM_UP
     );
-
-    /** Keeps track of the Pad index which has been pressed long in order not to get confused by
-     * the usual pressed ones */
-    final AtomicInteger data1OfLongPressedPad = new AtomicInteger(-1);
 
     @Override
     public void processControlls(List<Softstep1Pad> pushedDownPads) {
@@ -51,50 +47,23 @@ public class ClipControls extends SimpleConsolePrinter implements HasControllsFo
 
         List<Softstep1Pad> padsToConsiderForCLipLaunch = getCLipLaunchPads(pushedDownPads);
 
-                padsToConsiderForCLipLaunch.stream()
-                        .filter(p -> p.gestures().isLongPress())
-                        .forEach(pad -> {
-                                        apiManager.deleteSlotAt(pad.getNumber());
-
-                                        data1OfLongPressedPad.set(pad.getNumber());
-
-                                        pad.notifyControlConsumed();
-
-                                        p("! Delete slot by: " + pad);
-
-                                        return;
-                                }
-                        );
-                ///// Foot Ons for clip launch
-                padsToConsiderForCLipLaunch.stream()
-                            .filter(p -> p.gestures().isFootOn())
-                            .forEach(pad -> {
-                                        if ( !pad.gestures().isLongPress()) {
-
-                                            // need to do this to avoid triggering clip after deletong it
-                                            if (data1OfLongPressedPad.get() ==  pad.getNumber() ) {
-                                                data1OfLongPressedPad.set(-1);
-                                            }
-
-                                            else {
-
-                                                apiManager.fireSlotAt(pad.getNumber());
-
-                                                pad.notifyControlConsumed();
-
-                                                data1OfLongPressedPad.set(-1);
-
-//                                            p("! Fire slot by: " + pad);
-                                            }
-
-
-
-
-                                        } else {
-                                            p("skipping pad which was longpress: " + pad);
-                                        }
-                                    }
-                            );
+        padsToConsiderForCLipLaunch.stream()
+                .filter(p -> p.gestures().isLongPress())
+                .forEach(pad -> {
+                            apiManager.deleteSlotAt(pad.getNumber());
+                            pad.notifyControlConsumed();
+                            p("! Delete slot by: " + pad);
+                        }
+                );
+        ///// Foot Ons for clip launch
+        padsToConsiderForCLipLaunch.stream()
+                .filter(p -> p.gestures().isFootOn())
+                .forEach(pad -> {
+                            apiManager.fireSlotAt(pad.getNumber());
+                            pad.notifyControlConsumed();
+                            p("! Fire slot by: " + pad);
+                        }
+                );
     }
 
     private List<Softstep1Pad> getCLipLaunchPads(List<Softstep1Pad> pushedDownPads) {
@@ -111,19 +80,23 @@ public class ClipControls extends SimpleConsolePrinter implements HasControllsFo
         List<Softstep1Pad> navPads = padsToConsiderForNavigation.stream()
                 .filter(p -> p.gestures().isFootOn()).collect(Collectors.toList());
 
-        for (Softstep1Pad p :  navPads) {
-            switch (p.getNumber()){
+        for (Softstep1Pad p : navPads) {
+            switch (p.getNumber()) {
                 case PAD_NUM_UP:
                     apiManager.clipSlotBankUp();
+                    p.notifyControlConsumed();
                     return true;
                 case PAD_NUM_DOWN:
                     apiManager.clipSlotBankDown();
+                    p.notifyControlConsumed();
                     return true;
                 case PAD_NUM_LEFT:
                     apiManager.clipSlotBankLeft();
+                    p.notifyControlConsumed();
                     return true;
                 case PAGE_NUM_RIGHT:
                     apiManager.clipSlotBankRight();
+                    p.notifyControlConsumed();
                     return true;
             }
         }
@@ -131,10 +104,9 @@ public class ClipControls extends SimpleConsolePrinter implements HasControllsFo
     }
 
     protected List<Softstep1Pad> getNavigationPads(List<Softstep1Pad> pushedDownPads) {
-        List<Softstep1Pad> padsToConsiderForNavigation = pushedDownPads.stream()
-        .filter(arePadsForNavigation)
-        .filter(p -> p.gestures().isFootOn())
-        .collect(Collectors.toList());
-        return padsToConsiderForNavigation;
+        return pushedDownPads.stream()
+                .filter(arePadsForNavigation)
+                .filter(p -> p.gestures().isFootOn())
+                .collect(Collectors.toList());
     }
 }

@@ -6,8 +6,6 @@ import org.junit.Test;
 
 import java.util.List;
 
-import static org.junit.Assert.*;
-
 public class ClipControlsTest {
 
 
@@ -19,10 +17,10 @@ public class ClipControlsTest {
     }
     @Test
     public void processControlls() {
-        Controls controls = new Controls(null);
-
-        List<Softstep1Pad> pads = controls.getPads();
-        clipControlers.processControlls(pads);
+//        Controls controls = new Controls(null);
+//
+//        List<Softstep1Pad> pads = controls.getPads();
+//        clipControlers.processControlls(pads, msg);
     }
 
 

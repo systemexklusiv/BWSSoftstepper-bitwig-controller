@@ -21,7 +21,7 @@ public class SoftstepController extends SimpleConsolePrinter {
 
     public static final int USER_CONTROL_INDEX_FOR_PEDAL = 10;
     public static final int PEDAL_DATA1 = 50;
-    public static final int PEDAL_DATA2_MULTI = 2;
+    public static final double PEDAL_DATA2_MULTI = 1.95;
 
     private SoftstepHardware softstepHardware;
 
@@ -65,11 +65,9 @@ public class SoftstepController extends SimpleConsolePrinter {
 
         // don't forward midi if consumed for page change
         if (isMidiUsedForPageChange(msg)) return;
-
-        controls.update(msg);
-
         if (checkPedal(msg)) return;
 
+        controls.update(msg);
         triggerBitwigIfControlsUsed(controls, msg);
     }
 
@@ -78,7 +76,10 @@ public class SoftstepController extends SimpleConsolePrinter {
         && msg.getData1() == PEDAL_DATA1){
 //            p(msg.toString());
 //            p(String.valueOf(msg.getData2() * PEDAL_DATA2_MULTI));
-            apiManager.getApiToHost().setValueOfUserControl(USER_CONTROL_INDEX_FOR_PEDAL, (int) (msg.getData2() * PEDAL_DATA2_MULTI));
+            int currentVal = (int) Math.round(msg.getData2() * PEDAL_DATA2_MULTI);
+            int pedalVal = currentVal > 127 ? 127 : currentVal;
+            apiManager.getApiToHost().setValueOfUserControl(USER_CONTROL_INDEX_FOR_PEDAL, pedalVal);
+            return true;
         }
         return false;
     }

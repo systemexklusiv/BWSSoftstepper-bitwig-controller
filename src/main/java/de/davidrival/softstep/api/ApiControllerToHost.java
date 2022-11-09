@@ -54,12 +54,12 @@ public class ApiControllerToHost extends SimpleConsolePrinter{
     public void clipSlotBankLeft() {
 //        p("clipSlotBankLeft");
         api.getSceneBank().scrollByPages(-1);
+
     }
 
     public void clipSlotBankRight() {
 //        p("clipSlotBankRight");
         api.getSceneBank().scrollByPages(1);
-
     }
 
     public void armTrack() {

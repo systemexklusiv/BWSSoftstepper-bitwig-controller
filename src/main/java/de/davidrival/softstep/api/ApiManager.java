@@ -68,17 +68,16 @@ public class ApiManager {
         this.apiToHost = new ApiControllerToHost(this);
 
         /* cleanup content updates which are not correct reported from time to time */
-        runClipCleanupTaskEach(CLIPS_CONTENT_CLEANUP_PERIOD);
+//        runClipCleanupTaskEach(CLIPS_CONTENT_CLEANUP_PERIOD);
 
+        runPageCleanUpTask();
     }
 
     /**
      * checks for content in clip slots infinitly ond if absents sends explicitly a
      * OFF LED at the specific point. This is a fix or sometimes LED get Stuck
-     *
-     * @param millis time the task repeats
      */
-    private void runClipCleanupTaskEach(int millis) {
+    private void runClipCleanupTaskEach() {
         timer = new Timer();
         int size = getSlotBank().getSizeOfBank();
         timer.schedule(new TimerTask() {
@@ -92,7 +91,18 @@ public class ApiManager {
                     }
                 }
             }
-        }, 5000, millis);
+        }, 5000, CLIPS_CONTENT_CLEANUP_PERIOD);
+    }
+
+    private void runPageCleanUpTask() {
+        timer = new Timer();
+        Page current = getSoftstepController().getPages().getCurrentPage();
+        timer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                getSoftstepController().getSoftstepHardware().showAllLeds(current);
+            }
+        }, 5000, CLIPS_CONTENT_CLEANUP_PERIOD);
     }
 
 }

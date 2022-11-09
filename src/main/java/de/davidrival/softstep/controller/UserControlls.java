@@ -24,7 +24,7 @@ public class UserControlls extends SimpleConsolePrinter implements HasControllsF
     }
 
     @Override
-    public void processControlls(List<Softstep1Pad> pushedDownPads) {
+    public void processControlls(List<Softstep1Pad> pushedDownPads, ShortMidiMessage msg) {
         pushedDownPads.forEach(pad -> {
             apiManager.getApiToHost().setValueOfUserControl(pad.getNumber(), pad.gestures().getPressure());
             pad.notifyControlConsumed();

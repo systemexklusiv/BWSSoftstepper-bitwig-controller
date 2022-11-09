@@ -68,10 +68,6 @@ public class ApiManager {
         this.apiFromHost = new ApiHostToController(this);
         this.apiToHost = new ApiControllerToHost(this);
 
-        this.slotBank.addHasContentObserver(apiFromHost::onContentInSlotBankChanged);
-
-        this.slotBank.addPlaybackStateObserver(apiFromHost::onPlaybackStateChanged);
-
     }
 
 }

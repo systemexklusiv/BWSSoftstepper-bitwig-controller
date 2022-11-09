@@ -51,9 +51,7 @@ public class SoftstepperExtension extends ControllerExtension
               , host
       );
 
-
       softstepController.display();
-
 
       host.showPopupNotification("BWSSoftstepper Initialized");
       getHost().println("BWSSoftstepper Initialized!");
@@ -63,9 +61,6 @@ public class SoftstepperExtension extends ControllerExtension
    @Override
    public void exit()
    {
-      // TODO: Perform any cleanup once the driver exits
-      // For now just show a popup notification for verification that it is no longer running.
-
       softstepController.exit();
 
       getHost().showPopupNotification("BWSSoftstepper Exited");
@@ -75,7 +70,6 @@ public class SoftstepperExtension extends ControllerExtension
    public void flush()
    {
       // TODO Send any updates you need here.
-//      getHost().println("called flush");
    }
 
    /** Called when we receive short MIDI message on port 0. */

@@ -60,15 +60,15 @@ public class ApiControllerToHost extends SimpleConsolePrinter{
 
     }
 
-    public void armTrack(int number) {
+    public void armTrack() {
         api.getTrackCurser().arm().toggle();
     }
 
-    public void muteTrack(int number) {
+    public void muteTrack() {
         api.getTrackCurser().mute().toggle();
     }
 
-    public void stopTrack(int number) {
+    public void stopTrack() {
         api.getTrackCurser().stop();
     }
 }

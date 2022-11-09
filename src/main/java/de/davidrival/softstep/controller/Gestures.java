@@ -16,7 +16,7 @@ public class Gestures extends SimpleConsolePrinter {
     private static final int AMOUNT_GESTURES_PER_PAD = 5;
     public static final int EXPECTED_ON_VALUE = 127;
 
-    enum GestureOffsets {
+    public enum GestureOffsets {
         pressure, footOn, doubleTrigger, longPress, incDec
     }
 

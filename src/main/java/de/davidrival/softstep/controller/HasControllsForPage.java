@@ -9,7 +9,7 @@ interface HasControllsForPage {
 
     Page getPage();
 
-    void processControlls(List<Softstep1Pad> pushedDownPads);
+    void processControlls(List<Softstep1Pad> pushedDownPads, ShortMidiMessage msg);
 
 }
 

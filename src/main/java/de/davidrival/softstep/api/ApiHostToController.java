@@ -29,7 +29,10 @@ public class ApiHostToController extends SimpleConsolePrinter{
         this.api.getTrackCurser().mute().addValueObserver(this::onMuteChanged);
         this.api.getTrackCurser().mute().markInterested();
 
-        /* Import or some content updates are not correct */
+        api.getSlotBank().addHasContentObserver(this::onContentInSlotBankChanged);
+        api.getSlotBank().addPlaybackStateObserver(this::onPlaybackStateChanged);
+
+        /* cleanup content updates which are not correct reported from time to time */
         runClipCleanupTaskEach(CLIPS_CONTENT_CLEANUP_PERIOD);
     }
 

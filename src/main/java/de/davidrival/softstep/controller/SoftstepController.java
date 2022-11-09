@@ -59,16 +59,17 @@ public class SoftstepController extends SimpleConsolePrinter {
     }
 
     public void handleMidi(ShortMidiMessage msg) {
-        p(msg.toString());
+//        p(msg.toString());
+
         // don't forward midi if consumed for page change
         if (isMidiUsedForPageChange(msg)) return;
 
         controls.update(msg);
 
-        triggerBitwigIfControlsUsed(controls);
+        triggerBitwigIfControlsUsed(controls, msg);
     }
 
-    private void triggerBitwigIfControlsUsed(Controls controls) {
+    private void triggerBitwigIfControlsUsed(Controls controls, ShortMidiMessage msg) {
         List<Softstep1Pad> pushedDownPads = controls.getPads()
                 .stream()
                 .filter(Softstep1Pad::isUsed)
@@ -80,27 +81,32 @@ public class SoftstepController extends SimpleConsolePrinter {
         hasControllsForPages.stream()
                 .filter(c -> c.getPage().equals(pages.getCurrentPage()))
                 .findFirst().ifPresent(
-                        p -> p.processControlls(pushedDownPads)
+                        p -> p.processControlls(pushedDownPads, msg)
                 );
     }
 
+    // in hosted mode the NavPAd uo and down can just be configured as inc dec
+    // therefor I store the current data2 and is the next is greater I swap to clip
+    // otherwise to control mode
+    private int valueStore = 0;
     private boolean isMidiUsedForPageChange(ShortMidiMessage msg) {
         if (msg.getStatusByte() == SoftstepHardwareBase.STATUS_BYTE) {
+                if (msg.getData1() == SoftstepHardwareBase.NAVIGATION_DATA1) {
+                    if (msg.getData2() > valueStore && !pages.getCurrentPage().equals(Page.CLIP)) {
+                        pages.setCurrentPage(Page.CLIP);
+                        display();
 
-            if (msg.getData1() == SoftstepHardwareBase.NAVIGATION_DATA1) {
-                if (pages.getCurrentPage().pageIndex == Page.CLIP.pageIndex) {
-                    pages.setCurrentPage(Page.CTRL);
-                    display();
-                    return true;
-                } else if (pages.getCurrentPage().pageIndex != Page.CTRL.pageIndex) {
-                    pages.setCurrentPage(Page.CLIP);
-                    display();
-                    return true;
+                        return true;
+                    }
+                    else if (msg.getData2() < valueStore && !pages.getCurrentPage().equals(Page.CTRL)) {
+                        pages.setCurrentPage(Page.CTRL);
+                        display();
+                        return true;
+                    }
                 }
-
-            }
-
+                valueStore = msg.getData2();
         }
+
         return false;
     }
 

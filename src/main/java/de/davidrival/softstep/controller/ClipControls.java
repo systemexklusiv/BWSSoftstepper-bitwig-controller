@@ -1,10 +1,10 @@
 package de.davidrival.softstep.controller;
 
+import com.bitwig.extension.api.util.midi.ShortMidiMessage;
 import de.davidrival.softstep.api.ApiManager;
 import de.davidrival.softstep.api.SimpleConsolePrinter;
 
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -40,11 +40,11 @@ public class ClipControls extends SimpleConsolePrinter implements HasControllsFo
     );
 
     @Override
-    public void processControlls(List<Softstep1Pad> pushedDownPads) {
+    public void processControlls(List<Softstep1Pad> pushedDownPads, ShortMidiMessage msg) {
 
         if (processNavigationPads(getNavigationPads(pushedDownPads))) return;
 
-        if (processChannelStripPads(getChannelStripPads(pushedDownPads))) return;
+        if (processChannelStripPads(getChannelStripPads(pushedDownPads), msg)) return;
 
         List<Softstep1Pad> padsToConsiderForCLipLaunch = getCLipLaunchPads(pushedDownPads);
 
@@ -94,27 +94,27 @@ public class ClipControls extends SimpleConsolePrinter implements HasControllsFo
         return false;
     }
 
-    private boolean processChannelStripPads(List<Softstep1Pad> padsToConsiderForChannelStrip) {
+    private boolean processChannelStripPads(List<Softstep1Pad> padsToConsiderForChannelStrip, ShortMidiMessage msg) {
         List<Softstep1Pad> channelPads = padsToConsiderForChannelStrip.stream()
                 .filter(p -> p.gestures().isFootOn() || p.gestures().isDoubleTrigger())
                 .collect(Collectors.toList());
 
+            for (Softstep1Pad p : channelPads) {
+                switch (p.getNumber()) {
+                    case Page.PAD_INDICES.MUTE_PAD:
+                        if (p.gestures().isDoubleTrigger()) {
+                            apiManager.getApiToHost().stopTrack();
+                        } else {
+                            apiManager.getApiToHost().muteTrack();
+                        }
+                        p.notifyControlConsumed();
+                        return true;
+                    case Page.PAD_INDICES.ARM_PAD:
+                        apiManager.getApiToHost().armTrack();
+                        p.notifyControlConsumed();
+                        return true;
+                }
 
-        for (Softstep1Pad p : channelPads) {
-            switch (p.getNumber()) {
-                case Page.PAD_INDICES.MUTE_PAD:
-                    if (p.gestures().isDoubleTrigger()) {
-                        apiManager.getApiToHost().stopTrack(p.getNumber());
-                    } else {
-                        apiManager.getApiToHost().muteTrack(p.getNumber());
-                    }
-                    p.notifyControlConsumed();
-                    return true;
-                case Page.PAD_INDICES.ARM_PAD:
-                    apiManager.getApiToHost().armTrack(p.getNumber());
-                    p.notifyControlConsumed();
-                    return true;
-            }
         }
 
         return false;

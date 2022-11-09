@@ -3,18 +3,17 @@ package de.davidrival.softstep.controller;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.Timer;
 import java.util.TimerTask;
 
 @Getter
 @Setter
-public class GestureTimer {
+public class MyTimer {
 
-    protected Timer timer;
+    protected java.util.Timer timer;
     private int deltaTime = 0;
 
     public void start() {
-        timer = new Timer();
+        timer = new java.util.Timer();
         deltaTime = 0;
         go();
     }

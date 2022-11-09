@@ -11,10 +11,6 @@ import java.util.stream.Collectors;
 
 public class ClipControls extends SimpleConsolePrinter implements HasControllsForPage {
 
-    public static final int PAD_NUM_UP = 9;
-    public static final int PAD_NUM_DOWN = 4;
-    public static final int PAD_NUM_LEFT = 7;
-    public static final int PAGE_NUM_RIGHT = 8;
 
     public ClipControls(Page page, ApiManager apiManager) {
         super(apiManager.getHost());
@@ -30,27 +26,32 @@ public class ClipControls extends SimpleConsolePrinter implements HasControllsFo
         return this.page;
     }
 
-
-    private final Predicate<Softstep1Pad> arePadsForNavigation = (pad -> pad.getNumber() == PAD_NUM_DOWN
-            || pad.getNumber() == PAD_NUM_LEFT
-            || pad.getNumber() == PAGE_NUM_RIGHT
-            || pad.getNumber() == PAD_NUM_UP
+    private final Predicate<Softstep1Pad> arePadsForNavigation = (
+            pad ->
+            pad.getNumber() == Page.PAD_INDICES.NAV_DOWN
+            || pad.getNumber() == Page.PAD_INDICES.NAV_LEFT
+            || pad.getNumber() == Page.PAD_INDICES.NAV_RIGHT
+            || pad.getNumber() == Page.PAD_INDICES.NAV_UP
+    );
+    private final Predicate<Softstep1Pad> arePadsForChannelstrip = (
+            pad ->
+                    pad.getNumber() == Page.PAD_INDICES.MUTE_PAD
+                            || pad.getNumber() == Page.PAD_INDICES.ARM_PAD
     );
 
     @Override
     public void processControlls(List<Softstep1Pad> pushedDownPads) {
 
-        List<Softstep1Pad> padsToConsiderForNavigation = getNavigationPads(pushedDownPads);
+        if (processNavigationPads(getNavigationPads(pushedDownPads))) return;
 
-        if (processNavigationPads(padsToConsiderForNavigation)) return;
-
+        if (processChannelStripPads(getChannelStripPads(pushedDownPads))) return;
 
         List<Softstep1Pad> padsToConsiderForCLipLaunch = getCLipLaunchPads(pushedDownPads);
 
         padsToConsiderForCLipLaunch.stream()
                 .filter(p -> p.gestures().isLongPress())
                 .forEach(pad -> {
-                            apiManager.deleteSlotAt(pad.getNumber());
+                            apiManager.getApiToHost().deleteSlotAt(pad.getNumber());
                             pad.notifyControlConsumed();
                             p("! Delete slot by: " + pad);
                         }
@@ -59,11 +60,64 @@ public class ClipControls extends SimpleConsolePrinter implements HasControllsFo
         padsToConsiderForCLipLaunch.stream()
                 .filter(p -> p.gestures().isFootOn())
                 .forEach(pad -> {
-                            apiManager.fireSlotAt(pad.getNumber());
+                            apiManager.getApiToHost().fireSlotAt(pad.getNumber());
                             pad.notifyControlConsumed();
                             p("! Fire slot by: " + pad);
                         }
                 );
+    }
+    private boolean processNavigationPads(List<Softstep1Pad> padsToConsiderForNavigation) {
+        List<Softstep1Pad> navPads = padsToConsiderForNavigation.stream()
+                .filter(p -> p.gestures().isFootOn())
+                .collect(Collectors.toList());
+
+        for (Softstep1Pad p : navPads) {
+            switch (p.getNumber()) {
+                case Page.PAD_INDICES.NAV_UP:
+                    apiManager.getApiToHost().clipSlotBankUp();
+                    p.notifyControlConsumed();
+                    return true;
+                case Page.PAD_INDICES.NAV_DOWN:
+                    apiManager.getApiToHost().clipSlotBankDown();
+                    p.notifyControlConsumed();
+                    return true;
+                case Page.PAD_INDICES.NAV_LEFT:
+                    apiManager.getApiToHost().clipSlotBankLeft();
+                    p.notifyControlConsumed();
+                    return true;
+                case Page.PAD_INDICES.NAV_RIGHT:
+                    apiManager.getApiToHost().clipSlotBankRight();
+                    p.notifyControlConsumed();
+                    return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean processChannelStripPads(List<Softstep1Pad> padsToConsiderForChannelStrip) {
+        List<Softstep1Pad> channelPads = padsToConsiderForChannelStrip.stream()
+                .filter(p -> p.gestures().isFootOn() || p.gestures().isDoubleTrigger())
+                .collect(Collectors.toList());
+
+
+        for (Softstep1Pad p : channelPads) {
+            switch (p.getNumber()) {
+                case Page.PAD_INDICES.MUTE_PAD:
+                    if (p.gestures().isDoubleTrigger()) {
+                        apiManager.getApiToHost().stopTrack(p.getNumber());
+                    } else {
+                        apiManager.getApiToHost().muteTrack(p.getNumber());
+                    }
+                    p.notifyControlConsumed();
+                    return true;
+                case Page.PAD_INDICES.ARM_PAD:
+                    apiManager.getApiToHost().armTrack(p.getNumber());
+                    p.notifyControlConsumed();
+                    return true;
+            }
+        }
+
+        return false;
     }
 
     private List<Softstep1Pad> getCLipLaunchPads(List<Softstep1Pad> pushedDownPads) {
@@ -76,37 +130,16 @@ public class ClipControls extends SimpleConsolePrinter implements HasControllsFo
         return padsToConsiderForCLipLaunch;
     }
 
-    private boolean processNavigationPads(List<Softstep1Pad> padsToConsiderForNavigation) {
-        List<Softstep1Pad> navPads = padsToConsiderForNavigation.stream()
-                .filter(p -> p.gestures().isFootOn()).collect(Collectors.toList());
-
-        for (Softstep1Pad p : navPads) {
-            switch (p.getNumber()) {
-                case PAD_NUM_UP:
-                    apiManager.clipSlotBankUp();
-                    p.notifyControlConsumed();
-                    return true;
-                case PAD_NUM_DOWN:
-                    apiManager.clipSlotBankDown();
-                    p.notifyControlConsumed();
-                    return true;
-                case PAD_NUM_LEFT:
-                    apiManager.clipSlotBankLeft();
-                    p.notifyControlConsumed();
-                    return true;
-                case PAGE_NUM_RIGHT:
-                    apiManager.clipSlotBankRight();
-                    p.notifyControlConsumed();
-                    return true;
-            }
-        }
-        return false;
-    }
 
     protected List<Softstep1Pad> getNavigationPads(List<Softstep1Pad> pushedDownPads) {
         return pushedDownPads.stream()
                 .filter(arePadsForNavigation)
-                .filter(p -> p.gestures().isFootOn())
+                .collect(Collectors.toList());
+    }
+
+    protected List<Softstep1Pad> getChannelStripPads(List<Softstep1Pad> pushedDownPads) {
+        return pushedDownPads.stream()
+                .filter(arePadsForChannelstrip)
                 .collect(Collectors.toList());
     }
 }

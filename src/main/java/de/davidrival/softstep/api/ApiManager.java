@@ -6,12 +6,9 @@ import de.davidrival.softstep.controller.SoftstepController;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import static de.davidrival.softstep.api.ApiManager.PLAYBACK_EVENT.*;
 import static de.davidrival.softstep.controller.Page.CLIP_LED_STATES.*;
 
 @Getter
@@ -25,6 +22,10 @@ public class ApiManager {
     public static final boolean SHOW_CLIP_LAUNCHER_FEEDBACK = true;
     public static final int USER_CONTROL_PARAMETER_RESOLUTION = 128;
     public static final int CLIPS_CONTENT_CLEANUP_PERIOD = 2000;
+
+    private final CursorTrack trackCurser;
+    private final ApiHostToController apiFromHost;
+    private final ApiControllerToHost apiToHost;
 
     private Timer timer;
 
@@ -40,127 +41,37 @@ public class ApiManager {
     private SoftstepController softstepController;
     private ControllerHost host;
 
-    public ApiManager(ControllerHost host) {
+
+    public ApiManager(ControllerHost host, SoftstepController softstepController) {
 
         this.host = host;
+        this.softstepController = softstepController;
+
         this.userControls = host.createUserControls(AMOUNT_USER_CONTROLS);
         this.trackBank = host.createMainTrackBank(NUM_TRACKS, NUM_SENDS, NUM_SCENES);
+        this.trackCurser = host.
+                createCursorTrack("SOFTSTEP_CURSER_TRACK"
+                        , "softstep curster"
+                        ,0
+                        ,0
+                        ,true
+                ) ;
         this.sceneBank = trackBank.sceneBank();
-        trackBank.setShouldShowClipLauncherFeedback(SHOW_CLIP_LAUNCHER_FEEDBACK);
-        track = trackBank.getItemAt(0);
+        this.trackBank.setShouldShowClipLauncherFeedback(SHOW_CLIP_LAUNCHER_FEEDBACK);
+        this.track = trackBank.getItemAt(0);
+
+
+        this.trackBank.followCursorTrack(trackCurser);
+
         this.slotBank = track.clipLauncherSlotBank();
-        this.slotBank.addHasContentObserver(this::contentInSlotBankChanged);
 
-        this.slotBank.addPlaybackStateObserver((slotIndex, playbackState, isQueued) -> playbackStateChanged(slotIndex, getApiEventByCallbackIndex(playbackState)
-                , isQueued));
+        this.apiFromHost = new ApiHostToController(this);
+        this.apiToHost = new ApiControllerToHost(this);
 
-        /* Import or some content updates are not correct */
-         runClipCleanupTaskEach(CLIPS_CONTENT_CLEANUP_PERIOD);
-    }
+        this.slotBank.addHasContentObserver(apiFromHost::onContentInSlotBankChanged);
 
-    public void fireSlotAt(int number) {
-        slotBank
-                .launch(number);
-    }
-
-    public void deleteSlotAt(int number) {
-        slotBank
-                .getItemAt(number)
-                .deleteObject();
-    }
-
-    public void setValueOfUserControl(int index, int value) {
-        Parameter parameter = userControls
-                .getControl(index);
-        parameter.set(value, USER_CONTROL_PARAMETER_RESOLUTION);
-    }
-
-    public void clipSlotBankDown() {
-        p("clipSlotBankUp");
-        trackBank.scrollForwards();
-        track.selectInMixer();
-    }
-
-    public void clipSlotBankUp() {
-        p("clipSlotBankDown");
-        trackBank.scrollBackwards();
-        track.selectInMixer();
-    }
-
-    public void clipSlotBankLeft() {
-        p("clipSlotBankLeft");
-        sceneBank.scrollByPages(-1);
+        this.slotBank.addPlaybackStateObserver(apiFromHost::onPlaybackStateChanged);
 
     }
 
-    public void clipSlotBankRight() {
-        p("clipSlotBankRight");
-        sceneBank.scrollByPages(1);
-
-    }
-
-    /**
-     * checks for content in clip slots infinitly ond if absents sends explicitly a
-     * OFF LED at the specific point. This is a fix or sometimes LED get Stuck
-     *
-     * @param millis time the task repeats
-     */
-    private void runClipCleanupTaskEach(int millis) {
-        timer = new Timer();
-        int size = slotBank.getSizeOfBank();
-        timer.schedule(new TimerTask() {
-            @Override
-            public void run() {
-//                p(">>> running cleanup :-)");
-                for (int i = 0; i < size; i++) {
-                    ClipLauncherSlot clipLauncherSlot = slotBank.getItemAt(i);
-                    if ( !clipLauncherSlot.hasContent().get() ){
-                        softstepController.updateLedStates(Page.CLIP, i, OFF);
-                    }
-                }
-            }
-        }, 5000, millis);
-    }
-
-    public void contentInSlotBankChanged(int idx, boolean onOff) {
-        p("! content ! slotIdx" + idx + " clip? " + onOff);
-        softstepController.updateLedStates(Page.CLIP, idx, onOff ? STOP : OFF);
-    }
-
-    public void playbackStateChanged(int slotIndex, ApiManager.PLAYBACK_EVENT playbackEvent, boolean isQueued) {
-//        p("! playbackStateChanged ! slotIndex " + slotIndex + " playbackState " + playbackEvent.toString() + " isQueued " + isQueued);
-        switch (playbackEvent) {
-            case STOPPED:
-                softstepController.updateLedStates(Page.CLIP, slotIndex, isQueued ? STOP_QUE : STOP);
-                break;
-            case PLAYING:
-                softstepController.updateLedStates(Page.CLIP, slotIndex, isQueued ? PLAY_QUE : PLAY);
-                break;
-            case RECORDING:
-                softstepController.updateLedStates(Page.CLIP, slotIndex, isQueued ? REC_QUE : REC);
-                break;
-        }
-    }
-
-    private PLAYBACK_EVENT getApiEventByCallbackIndex(int playbackState) {
-        switch (playbackState) {
-            case 0:
-                return STOPPED;
-            case 1:
-                return PLAYING;
-            case 2:
-                return RECORDING;
-            default:
-                host.errorln("Unknown state from PlaybackStateObserver with idx: " + playbackState);
-                return PLAYBACK_STATE_NOT_KNOWN;
-        }
-    }
-
-    public void setController(SoftstepController softstepController) {
-        this.softstepController = softstepController;
-    }
-
-    public void p(String text) {
-        host.println(text);
-    }
 }

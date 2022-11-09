@@ -65,5 +65,21 @@ public enum Page {
         public static final LedStates REC = new LedStates(LedColor.RED, LedLight.ON);
         public static final LedStates REC_QUE = new LedStates(LedColor.RED, LedLight.BLINK);
     }
+    public static class CHANNEL_LED_STATES {
+        public static final LedStates MUTED = new LedStates(LedColor.YELLOW, LedLight.BLINK);
+        public static final LedStates UNMUTED = new LedStates(LedColor.YELLOW, LedLight.OFF);
+        public static final LedStates ARMED = new LedStates(LedColor.RED, LedLight.ON);
+        public static final LedStates UNARMED = new LedStates(LedColor.GREEN, LedLight.ON);
+    }
+
+    public static class PAD_INDICES {
+        public static final int MUTE_PAD = 5;
+        public static final int ARM_PAD = 6;
+        public static final int NAV_LEFT = 7;
+        public static final int NAV_RIGHT = 8;
+        public static final int NAV_UP = 9;
+        public static final int NAV_DOWN = 4;
+    }
+
 
 }

@@ -45,7 +45,7 @@ public class Gestures extends SimpleConsolePrinter {
         setFootOnDir(pad, -1);
         setlongPressDir(pad, -1);
         setDoubleTriggerDir(pad, -1);
-        p("reset pad: " + pad);
+//        p("reset pad: " + pad);
     }
 
     public boolean set(Softstep1Pad pad) {
@@ -57,26 +57,26 @@ public class Gestures extends SimpleConsolePrinter {
         if (isFootOn) {
             setFootOnDir(pad, 0);
             this.isFootOn = false;
-            p("! reset FOOT_ON on pad: " + pad);
+//            p("! reset FOOT_ON on pad: " + pad);
         }
         if (isLongPress) {
             setlongPressDir(pad, 0);
             this.isLongPress = false;
-            p("! reset LONG_PRESS on pad: " + pad);
+//            p("! reset LONG_PRESS on pad: " + pad);
         }
         if (isDoubleTrigger) {
             setDoubleTriggerDir(pad, 0);
             this.isDoubleTrigger = false;
-            p("! reset DOUBLE_TRIGGER on pad: " + pad);
+//            p("! reset DOUBLE_TRIGGER on pad: " + pad);
         }
 
         if (getLongPressValue(pad, dirs) == EXPECTED_ON_VALUE) {
             this.isLongPress = true;
-            p("! Found LONG_PRESS on pad: " + pad);
+//            p("! Found LONG_PRESS on pad: " + pad);
         } else {
             if (getDoubleTriggerValue(pad, dirs) == EXPECTED_ON_VALUE) {
                 this.isDoubleTrigger = true;
-                p("! DOUBLE_TRIGGER on pad: " + pad);
+//                p("! DOUBLE_TRIGGER on pad: " + pad);
             } else {
                 this.isFootOn = catchDoubleFootOnTrigger(getFootOnValue(pad, dirs));
             }
@@ -99,7 +99,7 @@ public class Gestures extends SimpleConsolePrinter {
             footOnCounter++;
             if (footOnCounter > 2) {
                 footOnCounter = 0;
-                p("! FOOT_ON on pad: ");
+//                p("! FOOT_ON on pad: ");
                 return true;
             }
         }

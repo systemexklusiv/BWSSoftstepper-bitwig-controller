@@ -30,6 +30,12 @@ public class SoftstepperExtension extends ControllerExtension
    {
       final ControllerHost host = getHost();
 
+      String[] options = {"option1", "option2"};
+      Preferences preferences = host.getPreferences();
+
+      SettableEnumValue enumSetting = preferences.getEnumSetting("Mode", "Global", options, options[0]);
+      enumSetting.addValueObserver(newValue -> host.println(" Enum Setting Changed to :" + newValue));
+
       transport = host.createTransport();
       midiIn = host.getMidiInPort(0);
       midiOut = host.getMidiOutPort(0);
@@ -39,12 +45,9 @@ public class SoftstepperExtension extends ControllerExtension
 
       SoftstepHardware softstepHardware = new SoftstepHardware(midiOut);
 
-      ApiManager apiManager = new ApiManager(host);
-
       ControllerPages controllerPages = new ControllerPages(Page.CLIP);
       softstepController = new SoftstepController(controllerPages
               , softstepHardware
-              , apiManager
               , host
       );
 

@@ -13,7 +13,7 @@ public class ClipControlsTest {
 
     @Before
     public void init() {
-        this.clipControlers = new ClipControls(Page.CLIP, new ApiManager(null));
+//        this.clipControlers = new ClipControls(Page.CLIP, new ApiManager(null));
     }
     @Test
     public void processControlls() {

@@ -36,14 +36,13 @@ public class SoftstepController extends SimpleConsolePrinter {
     public SoftstepController(
             ControllerPages controllerPages
             , SoftstepHardware softstepHardware
-            , ApiManager apiManager
             , ControllerHost hostOrNull) {
 
         super(hostOrNull);
         this.pages = controllerPages;
         this.softstepHardware = softstepHardware;
-        this.apiManager = apiManager;
-        this.apiManager.setController(this);
+        this.apiManager = new ApiManager(hostOrNull, this);
+
         this.controls = new Controls(apiManager.getHost());
 
         hasControllsForPages = new ArrayList<>();
@@ -60,7 +59,7 @@ public class SoftstepController extends SimpleConsolePrinter {
     }
 
     public void handleMidi(ShortMidiMessage msg) {
-
+        p(msg.toString());
         // don't forward midi if consumed for page change
         if (isMidiUsedForPageChange(msg)) return;
 
@@ -72,17 +71,17 @@ public class SoftstepController extends SimpleConsolePrinter {
     private void triggerBitwigIfControlsUsed(Controls controls) {
         List<Softstep1Pad> pushedDownPads = controls.getPads()
                 .stream()
-                .filter(pad -> pad.isUsed())
+                .filter(Softstep1Pad::isUsed)
                 .collect(Collectors.toList());
 
 //        If no controlls where used on the device just exit
         if (pushedDownPads.size() == 0) return;
 
-            hasControllsForPages.stream()
-                    .filter(c -> c.getPage().equals(pages.getCurrentPage()))
-                    .findFirst().ifPresent(
-                            p -> p.processControlls(pushedDownPads)
-                    );
+        hasControllsForPages.stream()
+                .filter(c -> c.getPage().equals(pages.getCurrentPage()))
+                .findFirst().ifPresent(
+                        p -> p.processControlls(pushedDownPads)
+                );
     }
 
     private boolean isMidiUsedForPageChange(ShortMidiMessage msg) {
@@ -93,8 +92,7 @@ public class SoftstepController extends SimpleConsolePrinter {
                     pages.setCurrentPage(Page.CTRL);
                     display();
                     return true;
-                } else
-                if (pages.getCurrentPage().pageIndex != Page.CTRL.pageIndex) {
+                } else if (pages.getCurrentPage().pageIndex != Page.CTRL.pageIndex) {
                     pages.setCurrentPage(Page.CLIP);
                     display();
                     return true;

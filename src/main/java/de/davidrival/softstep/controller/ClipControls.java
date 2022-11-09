@@ -96,16 +96,16 @@ public class ClipControls extends SimpleConsolePrinter implements HasControllsFo
 
     private boolean processChannelStripPads(List<Softstep1Pad> padsToConsiderForChannelStrip, ShortMidiMessage msg) {
         List<Softstep1Pad> channelPads = padsToConsiderForChannelStrip.stream()
-                .filter(p -> p.gestures().isFootOn() || p.gestures().isDoubleTrigger())
+                .filter(p -> p.gestures().isFootOn() || p.gestures().isLongPress())
                 .collect(Collectors.toList());
 
             for (Softstep1Pad p : channelPads) {
                 switch (p.getNumber()) {
                     case Page.PAD_INDICES.MUTE_PAD:
-                        if (p.gestures().isDoubleTrigger()) {
-                            apiManager.getApiToHost().stopTrack();
-                        } else {
+                        if (p.gestures().isFootOn()) {
                             apiManager.getApiToHost().muteTrack();
+                        } else {
+                            apiManager.getApiToHost().stopTrack();
                         }
                         p.notifyControlConsumed();
                         return true;

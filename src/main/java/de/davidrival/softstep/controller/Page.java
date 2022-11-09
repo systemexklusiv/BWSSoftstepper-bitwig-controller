@@ -71,6 +71,10 @@ public enum Page {
         public static final LedStates ARMED = new LedStates(LedColor.RED, LedLight.ON);
         public static final LedStates UNARMED = new LedStates(LedColor.GREEN, LedLight.ON);
     }
+    public static class USER_LED_STATES {
+        public static final LedStates FOOT_ON = new LedStates(LedColor.RED, LedLight.ON);
+        public static final LedStates FOOT_OFF = new LedStates(LedColor.GREEN, LedLight.ON);
+    }
 
     public static class PAD_INDICES {
         public static final int MUTE_PAD = 5;

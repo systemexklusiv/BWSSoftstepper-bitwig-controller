@@ -19,7 +19,9 @@ import java.util.stream.Collectors;
 @Setter
 public class SoftstepController extends SimpleConsolePrinter {
 
-    public static final int NAV_PAD_PUSHED_DOWN_TRESHOLD = 2;
+    public static final int USER_CONTROL_INDEX_FOR_PEDAL = 10;
+    public static final int PEDAL_DATA1 = 50;
+    public static final int PEDAL_DATA2_MULTI = 2;
 
     private SoftstepHardware softstepHardware;
 
@@ -66,7 +68,19 @@ public class SoftstepController extends SimpleConsolePrinter {
 
         controls.update(msg);
 
+        if (checkPedal(msg)) return;
+
         triggerBitwigIfControlsUsed(controls, msg);
+    }
+
+    private boolean checkPedal(ShortMidiMessage msg) {
+        if (msg.getStatusByte() == 176
+        && msg.getData1() == PEDAL_DATA1){
+//            p(msg.toString());
+//            p(String.valueOf(msg.getData2() * PEDAL_DATA2_MULTI));
+            apiManager.getApiToHost().setValueOfUserControl(USER_CONTROL_INDEX_FOR_PEDAL, (int) (msg.getData2() * PEDAL_DATA2_MULTI));
+        }
+        return false;
     }
 
     private void triggerBitwigIfControlsUsed(Controls controls, ShortMidiMessage msg) {
@@ -88,17 +102,23 @@ public class SoftstepController extends SimpleConsolePrinter {
     // in hosted mode the NavPAd uo and down can just be configured as inc dec
     // therefor I store the current data2 and is the next is greater I swap to clip
     // otherwise to control mode
-    private int valueStore = 0;
+    private int valueStore = -1;
     private boolean isMidiUsedForPageChange(ShortMidiMessage msg) {
         if (msg.getStatusByte() == SoftstepHardwareBase.STATUS_BYTE) {
                 if (msg.getData1() == SoftstepHardwareBase.NAVIGATION_DATA1) {
+
+                    if (valueStore == -1) {
+                        valueStore = msg.getData2();
+                        return true;
+                    }
+
                     if (msg.getData2() > valueStore && !pages.getCurrentPage().equals(Page.CLIP)) {
                         pages.setCurrentPage(Page.CLIP);
                         display();
 
                         return true;
                     }
-                    else if (msg.getData2() < valueStore && !pages.getCurrentPage().equals(Page.CTRL)) {
+                    if (msg.getData2() < valueStore && !pages.getCurrentPage().equals(Page.CTRL)) {
                         pages.setCurrentPage(Page.CTRL);
                         display();
                         return true;

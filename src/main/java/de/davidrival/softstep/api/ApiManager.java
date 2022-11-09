@@ -9,13 +9,13 @@ import lombok.Setter;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import static de.davidrival.softstep.controller.Page.CLIP_LED_STATES.*;
+import static de.davidrival.softstep.controller.Page.CLIP_LED_STATES.OFF;
 
 @Getter
 @Setter
 public class ApiManager {
 
-    public static final int AMOUNT_USER_CONTROLS = 10;
+    public static final int AMOUNT_USER_CONTROLS = 11;
     public static final int NUM_TRACKS = 1;
     public static final int NUM_SENDS = 0;
     public static final int NUM_SCENES = 4;
@@ -60,7 +60,6 @@ public class ApiManager {
         this.trackBank.setShouldShowClipLauncherFeedback(SHOW_CLIP_LAUNCHER_FEEDBACK);
         this.track = trackBank.getItemAt(0);
 
-
         this.trackBank.followCursorTrack(trackCurser);
 
         this.slotBank = track.clipLauncherSlotBank();
@@ -68,6 +67,32 @@ public class ApiManager {
         this.apiFromHost = new ApiHostToController(this);
         this.apiToHost = new ApiControllerToHost(this);
 
+        /* cleanup content updates which are not correct reported from time to time */
+        runClipCleanupTaskEach(CLIPS_CONTENT_CLEANUP_PERIOD);
+
+    }
+
+    /**
+     * checks for content in clip slots infinitly ond if absents sends explicitly a
+     * OFF LED at the specific point. This is a fix or sometimes LED get Stuck
+     *
+     * @param millis time the task repeats
+     */
+    private void runClipCleanupTaskEach(int millis) {
+        timer = new Timer();
+        int size = getSlotBank().getSizeOfBank();
+        timer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+//                p(">>> running cleanup :-)");
+                for (int i = 0; i < size; i++) {
+                    ClipLauncherSlot clipLauncherSlot = getSlotBank().getItemAt(i);
+                    if ( !clipLauncherSlot.hasContent().get() ){
+                        getSoftstepController().updateLedStates(Page.CLIP, i, OFF);
+                    }
+                }
+            }
+        }, 5000, millis);
     }
 
 }

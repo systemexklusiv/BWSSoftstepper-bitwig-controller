@@ -32,32 +32,9 @@ public class ApiHostToController extends SimpleConsolePrinter{
         api.getSlotBank().addHasContentObserver(this::onContentInSlotBankChanged);
         api.getSlotBank().addPlaybackStateObserver(this::onPlaybackStateChanged);
 
-        /* cleanup content updates which are not correct reported from time to time */
-        runClipCleanupTaskEach(CLIPS_CONTENT_CLEANUP_PERIOD);
     }
 
-    /**
-     * checks for content in clip slots infinitly ond if absents sends explicitly a
-     * OFF LED at the specific point. This is a fix or sometimes LED get Stuck
-     *
-     * @param millis time the task repeats
-     */
-    private void runClipCleanupTaskEach(int millis) {
-        timer = new Timer();
-        int size = api.getSlotBank().getSizeOfBank();
-        timer.schedule(new TimerTask() {
-            @Override
-            public void run() {
-//                p(">>> running cleanup :-)");
-                for (int i = 0; i < size; i++) {
-                    ClipLauncherSlot clipLauncherSlot = api.getSlotBank().getItemAt(i);
-                    if ( !clipLauncherSlot.hasContent().get() ){
-                        api.getSoftstepController().updateLedStates(Page.CLIP, i, OFF);
-                    }
-                }
-            }
-        }, 5000, millis);
-    }
+
 
     private void onMuteChanged(boolean onOff) {
 //        p("! onMuteChanged: " + onOff);

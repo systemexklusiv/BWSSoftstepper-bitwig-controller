@@ -30,11 +30,11 @@ public class SoftstepperExtension extends ControllerExtension
    {
       final ControllerHost host = getHost();
 
-      String[] options = {"option1", "option2"};
-      Preferences preferences = host.getPreferences();
-
-      SettableEnumValue enumSetting = preferences.getEnumSetting("Mode", "Global", options, options[0]);
-      enumSetting.addValueObserver(newValue -> host.println(" Enum Setting Changed to :" + newValue));
+//      String[] options = {"option1", "option2"};
+//      Preferences preferences = host.getPreferences();
+//
+//      SettableEnumValue enumSetting = preferences.getEnumSetting("Mode", "Global", options, options[0]);
+//      enumSetting.addValueObserver(newValue -> host.println(" Enum Setting Changed to :" + newValue));
 
       transport = host.createTransport();
       midiIn = host.getMidiInPort(0);

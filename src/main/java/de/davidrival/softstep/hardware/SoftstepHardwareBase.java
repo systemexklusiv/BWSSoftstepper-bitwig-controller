@@ -47,6 +47,12 @@ public class SoftstepHardwareBase {
                 , ledStates.ledFlashing.data2ForLed);
     }
 
+    /** use for quick led flipping but may cause issues */
+    public void drawFastAt(int index, LedStates ledStates) {
+        setLed(index
+                , ledStates.ledColor.data2ForLed
+                , ledStates.ledFlashing.data2ForLed);
+    }
     /**
      * Sets led number <led> (numbered from 1 to 10) to given color and mode
      *

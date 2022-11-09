@@ -1,15 +1,9 @@
 package de.davidrival.softstep.api;
 
-import com.bitwig.extension.controller.api.ControllerHost;
 import com.bitwig.extension.controller.api.Parameter;
 import de.davidrival.softstep.controller.Page;
-import de.davidrival.softstep.controller.SoftstepController;
-
-import java.util.Timer;
 
 import static de.davidrival.softstep.api.ApiManager.USER_CONTROL_PARAMETER_RESOLUTION;
-import static de.davidrival.softstep.controller.Page.CLIP_LED_STATES.OFF;
-import static de.davidrival.softstep.controller.Page.CLIP_LED_STATES.STOP;
 
 public class ApiControllerToHost extends SimpleConsolePrinter{
 
@@ -35,6 +29,14 @@ public class ApiControllerToHost extends SimpleConsolePrinter{
         Parameter parameter = api.getUserControls()
                 .getControl(index);
         parameter.set(value, USER_CONTROL_PARAMETER_RESOLUTION);
+
+        // update LEDs not for pedal which is user controll 11
+        if (index < 10) {
+            api.getSoftstepController().getSoftstepHardware().drawFastAt( index, value > 0
+                            ? Page.USER_LED_STATES.FOOT_ON
+                            : Page.USER_LED_STATES.FOOT_OFF);
+
+        }
     }
 
     public void clipSlotBankDown() {

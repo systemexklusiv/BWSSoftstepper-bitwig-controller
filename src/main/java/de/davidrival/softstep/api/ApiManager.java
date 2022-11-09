@@ -96,11 +96,10 @@ public class ApiManager {
 
     private void runPageCleanUpTask() {
         timer = new Timer();
-        Page current = getSoftstepController().getPages().getCurrentPage();
         timer.schedule(new TimerTask() {
             @Override
             public void run() {
-                getSoftstepController().getSoftstepHardware().showAllLeds(current);
+                getSoftstepController().display();
             }
         }, 5000, CLIPS_CONTENT_CLEANUP_PERIOD);
     }

@@ -53,7 +53,7 @@ public class ClipControls extends SimpleConsolePrinter implements HasControllsFo
                 .forEach(pad -> {
                             apiManager.getApiToHost().deleteSlotAt(pad.getNumber());
                             pad.notifyControlConsumed();
-                            p("! Delete slot by: " + pad);
+//                            p("! Delete slot by: " + pad);
                         }
                 );
         ///// Foot Ons for clip launch
@@ -62,7 +62,7 @@ public class ClipControls extends SimpleConsolePrinter implements HasControllsFo
                 .forEach(pad -> {
                             apiManager.getApiToHost().fireSlotAt(pad.getNumber());
                             pad.notifyControlConsumed();
-                            p("! Fire slot by: " + pad);
+//                            p("! Fire slot by: " + pad);
                         }
                 );
     }

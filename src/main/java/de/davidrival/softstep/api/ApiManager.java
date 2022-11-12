@@ -21,26 +21,28 @@ public class ApiManager {
     public static final int NUM_SCENES = 4;
     public static final boolean SHOW_CLIP_LAUNCHER_FEEDBACK = true;
     public static final int USER_CONTROL_PARAMETER_RESOLUTION = 128;
-    public static final int CLIPS_CONTENT_CLEANUP_PERIOD = 1000;
+    public static final int CLIPS_CONTENT_CLEANUP_PERIOD = 3000;
 
     private final CursorTrack trackCurser;
     private final ApiHostToController apiFromHost;
     private final ApiControllerToHost apiToHost;
 
     private Timer timer;
+    private Timer timer2;
 
-    public enum PLAYBACK_EVENT {STOPPED, PLAYING, RECORDING, PLAYBACK_STATE_NOT_KNOWN}
 
+
+    public enum PLAYBACK_EVENT {STOPPED, PLAYING, RECORDING, PLAYBACK_STATE_NOT_KNOWN;}
     private final ClipLauncherSlotBank slotBank;
+
     private UserControlBank userControls;
     private TrackBank trackBank;
     private Track track;
-
     private final SceneBank sceneBank;
 
     private SoftstepController softstepController;
-    private ControllerHost host;
 
+    private ControllerHost host;
 
     public ApiManager(ControllerHost host, SoftstepController softstepController) {
 
@@ -70,7 +72,25 @@ public class ApiManager {
         /* cleanup content updates which are not correct reported from time to time */
 //        runClipCleanupTaskEach(CLIPS_CONTENT_CLEANUP_PERIOD);
 
-        runPageCleanUpTask();
+//        runPageCleanUpTask();
+
+        runClipCleanupTaskEach();
+
+        run1stClipCheckTask();
+    }
+
+    private void run1stClipCheckTask() {
+        timer2 = new Timer();
+        timer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                    ClipLauncherSlot clipLauncherSlot = getSlotBank().getItemAt(0);
+                if ( !clipLauncherSlot.hasContent().get() ){
+//                    getSoftstepController().p(">>> running special cleanup ");
+                    getSoftstepController().updateLedStates(Page.CLIP, 0, OFF);
+                    }
+            }
+        }, 1000, CLIPS_CONTENT_CLEANUP_PERIOD);
     }
 
     /**
@@ -83,13 +103,14 @@ public class ApiManager {
         timer.schedule(new TimerTask() {
             @Override
             public void run() {
-//                p(">>> running cleanup :-)");
+//                getSoftstepController().p(">>> running cleanup :-)");
                 for (int i = 0; i < size; i++) {
                     ClipLauncherSlot clipLauncherSlot = getSlotBank().getItemAt(i);
                     if ( !clipLauncherSlot.hasContent().get() ){
                         getSoftstepController().updateLedStates(Page.CLIP, i, OFF);
                     }
                 }
+
             }
         }, 5000, CLIPS_CONTENT_CLEANUP_PERIOD);
     }
@@ -102,6 +123,13 @@ public class ApiManager {
                 getSoftstepController().display();
             }
         }, 5000, CLIPS_CONTENT_CLEANUP_PERIOD);
+    }
+
+    public void exit() {
+        timer.cancel();
+        timer=null;
+        timer2.cancel();
+        timer2=null;
     }
 
 }

@@ -55,6 +55,7 @@ public class ApiHostToController extends SimpleConsolePrinter{
     public void onContentInSlotBankChanged(int idx, boolean onOff) {
 //        p("! content ! slotIdx" + idx + " clip? " + onOff);
         api.getSoftstepController().updateLedStates(Page.CLIP, idx, onOff ? STOP : OFF);
+        api.getSoftstepController().p(api.getSoftstepController().getPages().getCurrentPage().toString());
     }
 
     public void onPlaybackStateChanged(int slotIndex, int index, boolean isQueued) {

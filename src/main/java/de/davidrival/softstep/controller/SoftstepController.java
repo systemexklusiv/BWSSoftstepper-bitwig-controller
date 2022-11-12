@@ -159,6 +159,8 @@ public class SoftstepController extends SimpleConsolePrinter {
     }
 
     public void exit() {
+        apiManager.exit();
+
         softstepHardware.exit();
     }
 

@@ -2,12 +2,13 @@ package de.davidrival.softstep.controller;
 
 import de.davidrival.softstep.hardware.LedColor;
 import de.davidrival.softstep.hardware.LedLight;
+import lombok.ToString;
 
 
 import java.util.ArrayList;
 import java.util.Arrays;
 
-
+@ToString
 public enum Page {
     USER(0
             , new LedStates(LedColor.RED, LedLight.ON)
@@ -26,19 +27,19 @@ public enum Page {
     ))),
 
     CLIP(1
-            , new LedStates(LedColor.YELLOW, LedLight.ON)
+            , new LedStates(LedColor.YELLOW, LedLight.OFF)
             , new LedStates(LedColor.YELLOW, LedLight.OFF)
             , new ArrayList<>(Arrays.asList(
                 new LedStates(LedColor.YELLOW, LedLight.OFF),
                 new LedStates(LedColor.YELLOW, LedLight.OFF),
                 new LedStates(LedColor.YELLOW, LedLight.OFF),
                 new LedStates(LedColor.YELLOW, LedLight.OFF),
-                new LedStates(LedColor.GREEN, LedLight.ON),
+                new LedStates(LedColor.GREEN, LedLight.OFF),
                 new LedStates(LedColor.YELLOW, LedLight.OFF),
                 new LedStates(LedColor.YELLOW, LedLight.OFF),
-                new LedStates(LedColor.YELLOW, LedLight.ON),
-                new LedStates(LedColor.RED, LedLight.ON),
-                new LedStates(LedColor.GREEN, LedLight.ON))
+                new LedStates(LedColor.YELLOW, LedLight.OFF),
+                new LedStates(LedColor.RED, LedLight.OFF),
+                new LedStates(LedColor.GREEN, LedLight.OFF))
             )
     );
 

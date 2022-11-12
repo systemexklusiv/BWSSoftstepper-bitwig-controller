@@ -29,7 +29,7 @@ public class SoftstepHardwareBase {
 
     public void init() {
         midiOut.sendSysex(SOFTSTEPMODE_STANDALONE); // standalone - the controller determins gestures and midi mapping
-        midiOut.sendSysex(TETHER_B); // tether
+//        midiOut.sendSysex(TETHER_B); // tether
 //        midiOut.sendSysex(SOFTSTEP_MODE_HOST); // Hostmode eg the script controls everything
 //        midiOut.sendSysex(TETHER_A); // Tether
         midiOut.sendSysex(BACKLIGHT_ON); // backlight on
@@ -40,8 +40,8 @@ public class SoftstepHardwareBase {
         displayText("   ");
         resetLeds();
 
-        midiOut.sendSysex(SOFTSTEPMODE_STANDALONE); // standalone - the controller determins gestures and midi mapping
-        midiOut.sendSysex(TETHER_B); // tether
+//        midiOut.sendSysex(SOFTSTEPMODE_STANDALONE); // standalone - the controller determins gestures and midi mapping
+//        midiOut.sendSysex(TETHER_B); // tether
     }
 
     public void drawLedAt(int index, LedStates ledStates) {

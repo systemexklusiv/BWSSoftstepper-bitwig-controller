@@ -21,7 +21,7 @@ public class ApiManager {
     public static final int NUM_SCENES = 4;
     public static final boolean SHOW_CLIP_LAUNCHER_FEEDBACK = true;
     public static final int USER_CONTROL_PARAMETER_RESOLUTION = 128;
-    public static final int CLIPS_CONTENT_CLEANUP_PERIOD = 2000;
+    public static final int CLIPS_CONTENT_CLEANUP_PERIOD = 1000;
 
     private final CursorTrack trackCurser;
     private final ApiHostToController apiFromHost;

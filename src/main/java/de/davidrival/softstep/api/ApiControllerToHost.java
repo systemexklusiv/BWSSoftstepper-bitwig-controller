@@ -73,4 +73,11 @@ public class ApiControllerToHost extends SimpleConsolePrinter{
     public void stopTrack() {
         api.getTrackCurser().stop();
     }
+
+    public void deleteAllSlots() {
+        int size = api.getSlotBank().getSizeOfBank();
+        for (int i = 0; i < size; i++) {
+            deleteSlotAt(i);
+        }
+    }
 }

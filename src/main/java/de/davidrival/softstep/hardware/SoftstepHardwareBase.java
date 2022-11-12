@@ -11,6 +11,12 @@ import lombok.Setter;
 @Builder
 public class SoftstepHardwareBase {
 
+    public static final String SOFTSTEPMODE_STANDALONE = "f0 00 1b 48 7a 01 00 00 00 00 00 00 00 00 00 00 00 01 00 09 00 0b 2b 3a 00 10 04 00 00 00 00 00 00 00 00 17 1f 00 00 00 00 00 f7";
+    public static final String SOFTSTEP_MODE_HOST = "f0 00 1b 48 7a 01 00 00 00 00 00 00 00 00 00 00 00 01 00 09 00 0b 2b 3a 00 10 04 01 00 00 00 00 00 00 00 2f 7e 00 00 00 00 02 f7";
+    public static final String TETHER_A = "f0 00 1b 48 7a 01 00 00 00 00 00 00 00 00 00 00 00 01 00 09 00 0b 2b 3a 00 10 03 00 00 00 00 00 00 00 00 50 07 00 00 00 00 00 f7";
+    public static final String BACKLIGHT_ON = "f0 00 1b 48 7a 01 00 00 00 00 00 00 00 00 00 00 00 01 00 04 00 05 08 25 01 20 00 00 7b 2c 00 00 00 0c f7";
+    public static final String BACKLIGHT_OFF = "f0 00 1b 48 7a 01 00 00 00 00 00 00 00 00 00 00 00 01 00 04 00 05 08 25 00 20 00 00 4c 1c 00 00 00 0c f7";
+    public static final String TETHER_B = "f0 00 1b 48 7a 01 00 00 00 00 00 00 00 00 00 00 00 01 00 09 00 0b 2b 3a 00 10 03 01 00 00 00 00 00 00 00 68 66 00 00 00 00 00 f7";
     private final MidiOut midiOut;
 
     public static final int STATUS_BYTE = 176;
@@ -22,19 +28,20 @@ public class SoftstepHardwareBase {
     }
 
     public void init() {
-//        midiOut.sendSysex("f0 00 1b 48 7a 01 00 00 00 00 00 00 00 00 00 00 00 01 00 09 00 0b 2b 3a 00 10 04 00 00 00 00 00 00 00 00 17 1f 00 00 00 00 00 f7"); // standalone - the controller determins gestures and midi mapping
-//        midiOut.sendSysex("f0 00 1b 48 7a 01 00 00 00 00 00 00 00 00 00 00 00 01 00 09 00 0b 2b 3a 00 10 04 01 00 00 00 00 00 00 00 2f 7e 00 00 00 00 02 f7"); // Hostmode eg the script controls everything
-//        midiOut.sendSysex("f0 00 1b 48 7a 01 00 00 00 00 00 00 00 00 00 00 00 01 00 09 00 0b 2b 3a 00 10 03 00 00 00 00 00 00 00 00 50 07 00 00 00 00 00 f7"); // Tether
-        midiOut.sendSysex("f0 00 1b 48 7a 01 00 00 00 00 00 00 00 00 00 00 00 01 00 04 00 05 08 25 01 20 00 00 7b 2c 00 00 00 0c f7"); // backlight on
+        midiOut.sendSysex(SOFTSTEPMODE_STANDALONE); // standalone - the controller determins gestures and midi mapping
+        midiOut.sendSysex(TETHER_B); // tether
+//        midiOut.sendSysex(SOFTSTEP_MODE_HOST); // Hostmode eg the script controls everything
+//        midiOut.sendSysex(TETHER_A); // Tether
+        midiOut.sendSysex(BACKLIGHT_ON); // backlight on
     }
 
     public void exit() {
-        midiOut.sendSysex("f0 00 1b 48 7a 01 00 00 00 00 00 00 00 00 00 00 00 01 00 04 00 05 08 25 00 20 00 00 4c 1c 00 00 00 0c f7"); // backlight off
+        midiOut.sendSysex(BACKLIGHT_OFF); // backlight off
         displayText("   ");
         resetLeds();
 
-//        midiOut.sendSysex("f0 00 1b 48 7a 01 00 00 00 00 00 00 00 00 00 00 00 01 00 09 00 0b 2b 3a 00 10 04 00 00 00 00 00 00 00 00 17 1f 00 00 00 00 00 f7"); // standalone - the controller determins gestures and midi mapping
-//        midiOut.sendSysex("f0 00 1b 48 7a 01 00 00 00 00 00 00 00 00 00 00 00 01 00 09 00 0b 2b 3a 00 10 03 01 00 00 00 00 00 00 00 68 66 00 00 00 00 00 f7"); // tether
+        midiOut.sendSysex(SOFTSTEPMODE_STANDALONE); // standalone - the controller determins gestures and midi mapping
+        midiOut.sendSysex(TETHER_B); // tether
     }
 
     public void drawLedAt(int index, LedStates ledStates) {

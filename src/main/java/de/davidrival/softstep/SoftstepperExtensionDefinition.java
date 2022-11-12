@@ -41,7 +41,7 @@ public class SoftstepperExtensionDefinition extends ControllerExtensionDefinitio
    @Override
    public String getHardwareVendor()
    {
-      return "AAA";
+      return "Keith McMillen";
    }
    
    @Override

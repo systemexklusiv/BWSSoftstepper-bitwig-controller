@@ -9,7 +9,7 @@ import java.util.Arrays;
 
 
 public enum Page {
-    CTRL(0
+    USER(0
             , new LedStates(LedColor.RED, LedLight.ON)
             , new LedStates(LedColor.GREEN, LedLight.ON)
             , new ArrayList<>(Arrays.asList(

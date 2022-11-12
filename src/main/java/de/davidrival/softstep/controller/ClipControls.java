@@ -110,7 +110,11 @@ public class ClipControls extends SimpleConsolePrinter implements HasControllsFo
                         p.notifyControlConsumed();
                         return true;
                     case Page.PAD_INDICES.ARM_PAD:
-                        apiManager.getApiToHost().armTrack();
+                        if (p.gestures().isFootOn()) {
+                            apiManager.getApiToHost().armTrack();
+                        } else {
+                            apiManager.getApiToHost().deleteAllSlots();
+                        }
                         p.notifyControlConsumed();
                         return true;
                 }

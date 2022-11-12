@@ -49,7 +49,7 @@ public class SoftstepController extends SimpleConsolePrinter {
 
         hasControllsForPages = new ArrayList<>();
         HasControllsForPage clipControlls = new ClipControls(Page.CLIP, apiManager);
-        HasControllsForPage userControlls = new UserControlls(Page.CTRL, apiManager);
+        HasControllsForPage userControlls = new UserControlls(Page.USER, apiManager);
         hasControllsForPages.add(clipControlls);
         hasControllsForPages.add(userControlls);
 
@@ -119,8 +119,8 @@ public class SoftstepController extends SimpleConsolePrinter {
 
                         return true;
                     }
-                    if (msg.getData2() < valueStore && !pages.getCurrentPage().equals(Page.CTRL)) {
-                        pages.setCurrentPage(Page.CTRL);
+                    if (msg.getData2() < valueStore && !pages.getCurrentPage().equals(Page.USER)) {
+                        pages.setCurrentPage(Page.USER);
                         display();
                         return true;
                     }

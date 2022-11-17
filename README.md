@@ -1,6 +1,9 @@
 Bitwig Studio Softstepper 
 
-This script is in JAVA but is very much inspired by the the one made by: Nikolaus Gradwohl wich you can find here
+This script is in JAVA 
+
+
+Big thanks to Nikolaus Gradwohl for the great script which helped me a lot! You can find it here
 https://github.com/ngradwohl/bitwig_scripts/tree/master/Controller%20Scripts/softstep
 
 

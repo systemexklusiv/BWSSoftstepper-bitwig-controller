@@ -50,6 +50,13 @@ public class SoftstepperExtensionDefinition extends ControllerExtensionDefinitio
       return "BWSSoftstepper";
    }
 
+   /** {@inheritDoc} */
+   @Override
+   public String getHelpFilePath ()
+   {
+      return "BWS.pdf";
+   }
+
    @Override
    public int getRequiredAPIVersion()
    {

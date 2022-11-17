@@ -36,9 +36,9 @@ public class SoftstepHardwareBase {
     }
 
     public void exit() {
-        midiOut.sendSysex(BACKLIGHT_OFF); // backlight off
         displayText("   ");
         resetLeds();
+        midiOut.sendSysex(BACKLIGHT_OFF); // backlight off
 
 //        midiOut.sendSysex(SOFTSTEPMODE_STANDALONE); // standalone - the controller determins gestures and midi mapping
 //        midiOut.sendSysex(TETHER_B); // tether

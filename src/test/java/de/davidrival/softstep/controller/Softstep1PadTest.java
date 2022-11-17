@@ -1,6 +1,7 @@
 package de.davidrival.softstep.controller;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -51,21 +52,6 @@ public class Softstep1PadTest {
     }
 
     @Test
-    public void distributeToDirections() {
-        padUnderTest.update(0, 69);
-        assertEquals(Optional.of(69).get(), padUnderTest.getDirections().get(0));
-        padUnderTest.update(3, 42);
-        assertEquals(Optional.of(42).get(), padUnderTest.getDirections().get(3));
-    }
-
-    @Test
-    public void ensureCrucialMethodsCalled() {
-//        Softstep1Pad mockPad = Mockito.spy(padUnderTest);
-//        mockPad.update(3, 99);
-//        verify(mockPad, times(1)).calcMaxPressureOfDirections(anyMap());
-    }
-
-    @Test
     public void calcMaxPressureOfDirectionsTest() {
         int maxPressure = padUnderTest.calcMaxPressureOfDirections(padUnderTest.getDirections());
         assertEquals(69, maxPressure);
@@ -78,6 +64,7 @@ public class Softstep1PadTest {
     }
 
     @Test
+    @Ignore
     public void notifyControlConsumed() {
         padUnderTest.update(0, 69);
         assertTrue(padUnderTest.isUsed());

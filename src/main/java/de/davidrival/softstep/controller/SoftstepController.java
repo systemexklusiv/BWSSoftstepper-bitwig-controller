@@ -65,7 +65,7 @@ public class SoftstepController extends SimpleConsolePrinter {
 
         // don't forward midi if consumed for page change
         if (isMidiUsedForPageChange(msg)) return;
-        if (checkPedal(msg)) return;
+//        if (checkPedal(msg)) return;
 
         controls.update(msg);
         triggerBitwigIfControlsUsed(controls, msg);

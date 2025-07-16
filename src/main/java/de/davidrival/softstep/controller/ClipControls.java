@@ -56,9 +56,9 @@ public class ClipControls extends SimpleConsolePrinter implements HasControllsFo
 //                            p("! Delete slot by: " + pad);
                         }
                 );
-        ///// Foot Ons for clip launch
+        ///// Any press for clip launch (simplified)
         padsToConsiderForCLipLaunch.stream()
-                .filter(p -> p.gestures().isFootOn())
+                .filter(p -> p.gestures().isAnyPress())
                 .forEach(pad -> {
                             apiManager.getApiToHost().fireSlotAt(pad.getNumber());
                             pad.notifyControlConsumed();

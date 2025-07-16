@@ -28,6 +28,8 @@ public class Gestures extends SimpleConsolePrinter {
 
     private boolean isLongPress = false;
 
+    private boolean isAnyPress = false;
+
 
 
     public Gestures(ControllerHost hostOrNull) {
@@ -40,6 +42,7 @@ public class Gestures extends SimpleConsolePrinter {
         footOnCounter = 0;
         isLongPress = false;
         isDoubleTrigger = false;
+        isAnyPress = false;
         setFootOnDir(pad, -1);
         setlongPressDir(pad, -1);
         setDoubleTriggerDir(pad, -1);
@@ -50,6 +53,10 @@ public class Gestures extends SimpleConsolePrinter {
         Map<Integer, Integer> dirs = pad.getDirections();
 
         this.pressure = dirs.get(pad.getMinData1() + GestureOffsets.pressure.ordinal());
+
+        // Simple detection: any pressure above threshold = press
+        int maxPressure = pad.calcMaxPressureOfDirections(dirs);
+        this.isAnyPress = maxPressure > 10; // Threshold of 10 for any press
 
 //        if(isFootOn && (pressure <= OFF_THRESHOLD)  ) {
         if (isFootOn) {
@@ -137,6 +144,10 @@ public class Gestures extends SimpleConsolePrinter {
 
     private int longPressDirectionsIndex(Softstep1Pad pad) {
         return pad.getMinData1() + GestureOffsets.longPress.ordinal();
+    }
+
+    public boolean isAnyPress() {
+        return isAnyPress;
     }
 
 

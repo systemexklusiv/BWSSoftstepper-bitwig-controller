@@ -27,23 +27,27 @@ public class Controls extends SimpleConsolePrinter {
 
     public List<Softstep1Pad> init() {
         // Note to myself: its upside down because the labeling on the softstep start at the bottom left
+        // Host mode uses hardcoded addresses: [44, 52, 60, 68, 76, 40, 48, 56, 64, 72]
 
         return  new ArrayList<>(Arrays.asList(
-                makePad(5,25), makePad(6,30), makePad(7,35), makePad(8,40), makePad(9,45),
-                makePad(0,0), makePad(1,5), makePad(2,10), makePad(3,15), makePad(4,20)
+                makePad(5,76), makePad(6,40), makePad(7,48), makePad(8,56), makePad(9,64),
+                makePad(0,44), makePad(1,52), makePad(2,60), makePad(3,68), makePad(4,72)
         ));
     }
 
     /**
-     * @param startCC a pad has 4 corners on the softstep an the start cc is upper left
+     * @param baseCC the base CC address for this pad in host mode
      * @return a fresh and shiny pad
      */
-    private Softstep1Pad makePad(int number, int startCC) {
+    private Softstep1Pad makePad(int number, int baseCC) {
         Map<Integer, Integer> tmpDirections = new HashMap<>(5);
-        for (int j = 0; j < 5; j++) {
+        
+        // In host mode, each pad sends pressure values on 4 consecutive addresses
+        // Simplified: removed incDec gesture, just 4 directions per pad
+        for (int j = 0; j < 4; j++) {
             // Data1 is the key in the directions map,
             // the value is Data2 and initialized with -1
-            tmpDirections.put(startCC + j, -1);
+            tmpDirections.put(baseCC + j, -1);
         }
         return new Softstep1Pad(number, tmpDirections, host);
     }

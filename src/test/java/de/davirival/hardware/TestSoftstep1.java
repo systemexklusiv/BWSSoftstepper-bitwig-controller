@@ -15,7 +15,8 @@ public class TestSoftstep1 {
         Controls softstep1 = new Controls(null);
 
         Assert.assertEquals(10, softstep1.getPads().size());
-        Assert.assertEquals(Optional.of(25).get(), softstep1
+        // Pad at index 0 is makePad(5,76), so CC range is 76-79
+        Assert.assertEquals(Optional.of(76).get(), softstep1
                 .getPads()
                 .get(0)
                 .getDirections()
@@ -24,7 +25,8 @@ public class TestSoftstep1 {
                 .collect(Collectors.toList())
                 .get(0));
 
-        Assert.assertEquals(Optional.of(22).get(), softstep1
+        // Pad at index 9 is makePad(4,72), so CC range is 72-75, 4th element is 75
+        Assert.assertEquals(Optional.of(75).get(), softstep1
                 .getPads()
                 .get(9)
                 .getDirections()

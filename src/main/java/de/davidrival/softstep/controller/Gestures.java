@@ -13,11 +13,11 @@ import java.util.Map;
 @ToString
 public class Gestures extends SimpleConsolePrinter {
 
-    private static final int AMOUNT_GESTURES_PER_PAD = 5;
+    private static final int AMOUNT_GESTURES_PER_PAD = 4;
     public static final int EXPECTED_ON_VALUE = 127;
 
     public enum GestureOffsets {
-        pressure, footOn, doubleTrigger, longPress, incDec
+        pressure, footOn, doubleTrigger, longPress
     }
 
     private int pressure = 0;
@@ -28,7 +28,6 @@ public class Gestures extends SimpleConsolePrinter {
 
     private boolean isLongPress = false;
 
-    private int isIncDec = 0;
 
 
     public Gestures(ControllerHost hostOrNull) {
@@ -41,7 +40,6 @@ public class Gestures extends SimpleConsolePrinter {
         footOnCounter = 0;
         isLongPress = false;
         isDoubleTrigger = false;
-        isIncDec = 0;
         setFootOnDir(pad, -1);
         setlongPressDir(pad, -1);
         setDoubleTriggerDir(pad, -1);
@@ -82,7 +80,6 @@ public class Gestures extends SimpleConsolePrinter {
             }
         }
 
-        this.isIncDec = dirs.get(pad.getMinData1() + GestureOffsets.incDec.ordinal());
 
         return true;
     }

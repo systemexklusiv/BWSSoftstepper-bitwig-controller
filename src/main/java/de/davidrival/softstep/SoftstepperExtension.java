@@ -76,7 +76,7 @@ public class SoftstepperExtension extends ControllerExtension
    private void onMidi0(ShortMidiMessage msg) 
    {
 //      getHost().println("--- incomming msg! ---");
-//      getHost().println(msg.toString());
+      getHost().println(msg.toString());
 //      getHost().println("^^^^^^^^^^^^^^^^^^^^^^");
       softstepController.handleMidi(msg);
    }

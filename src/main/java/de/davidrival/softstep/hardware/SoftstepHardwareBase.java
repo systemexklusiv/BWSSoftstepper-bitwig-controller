@@ -28,10 +28,9 @@ public class SoftstepHardwareBase {
     }
 
     public void init() {
-        midiOut.sendSysex(SOFTSTEPMODE_STANDALONE); // standalone - the controller determins gestures and midi mapping
-//        midiOut.sendSysex(TETHER_B); // tether
-//        midiOut.sendSysex(SOFTSTEP_MODE_HOST); // Hostmode eg the script controls everything
-//        midiOut.sendSysex(TETHER_A); // Tether
+        // Switch to host mode - script controls everything, no preset needed
+        midiOut.sendSysex(SOFTSTEP_MODE_HOST); // Host mode - script controls everything
+        midiOut.sendSysex(TETHER_A); // Tether mode A
         midiOut.sendSysex(BACKLIGHT_ON); // backlight on
     }
 

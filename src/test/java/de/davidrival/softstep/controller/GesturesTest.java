@@ -3,12 +3,10 @@ package de.davidrival.softstep.controller;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Mockito;
 
 import java.util.Timer;
 
 import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
 
 public class GesturesTest {
 

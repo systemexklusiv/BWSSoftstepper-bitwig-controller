@@ -1,0 +1,45 @@
+plugins {
+    id 'java'
+}
+
+group = 'com.systemexklusiv'
+version = '0.1'
+
+repositories {
+    mavenCentral()
+    maven {
+        url = uri("https://maven.bitwig.com")
+    }
+}
+
+dependencies {
+    implementation 'com.bitwig:extension-api:18'
+    testImplementation 'junit:junit:4.12'
+    compileOnly 'org.projectlombok:lombok:1.18.30'
+    annotationProcessor 'org.projectlombok:lombok:1.18.30'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
+
+final var String ARTEFACT_NAME = "BWSSoftstepperNative"
+
+tasks.register('copyBwextension', Copy) {
+    from(jar)
+    into('src/main/resources/release')
+    rename { String fileName ->
+        fileName.replace(project.name, ARTEFACT_NAME).replace(".jar", ".bwextension")
+    }
+}
+
+tasks.register('deployToBitwig', Copy) {
+    description = "Copies the .bwextension file to the Bitwig Studio Extensions directory."
+    from 'src/main/resources/release/' + ARTEFACT_NAME + '-' + version + '.bwextension'
+    into '/Users/davidrival/Documents/Bitwig Studio/Extensions'
+}
+
+copyBwextension.finalizedBy(deployToBitwig)
+
+build.finalizedBy(copyBwextension)

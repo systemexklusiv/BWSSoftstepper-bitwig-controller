@@ -1,8 +1,9 @@
 package de.davirival.hardware;
 
-import de.davidrival.softstep.controller.Controls;
 import org.junit.Assert;
 import org.junit.Test;
+
+import de.davidrival.softstep.controller.Controls;
 
 import java.util.Optional;
 import java.util.stream.Collectors;

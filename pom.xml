@@ -58,8 +58,8 @@
                 <configuration>
                     <optimize>true</optimize>
                     <fork>true</fork>
-                    <source>11</source>
-                    <target>11</target>
+                    <source>21</source>
+                    <target>21</target>
                     <encoding>UTF-8</encoding>
                     <maxmem>1024m</maxmem>
                 </configuration>
@@ -98,7 +98,7 @@
                         </goals>
                         <configuration>
                             <sourceFile>${project.build.directory}/${project.build.finalName}.jar</sourceFile>
-                            <destinationFile>${bitwig.extension.directory}/BWSSoftstepper.bwextension</destinationFile>
+                            <destinationFile>${bitwig.deploy.location}/BWSSoftstepperNative.bwextension</destinationFile>
                         </configuration>
                     </execution>
                     <!--					<execution>

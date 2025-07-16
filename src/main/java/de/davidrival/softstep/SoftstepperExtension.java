@@ -53,8 +53,8 @@ public class SoftstepperExtension extends ControllerExtension
 
       softstepController.display();
 
-      host.showPopupNotification("BWSSoftstepper Initialized");
-      getHost().println("BWSSoftstepper Initialized!");
+      host.showPopupNotification("BWSSoftstepper Native Initialized");
+      getHost().println("BWSSoftstepper Native Initialized!");
    }
 
 

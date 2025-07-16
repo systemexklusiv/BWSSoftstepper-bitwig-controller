@@ -8,16 +8,17 @@ import com.bitwig.extension.controller.api.ControllerHost;
 
 public class SoftstepperExtensionDefinition extends ControllerExtensionDefinition
 {
-   private static final UUID DRIVER_ID = UUID.fromString("3f41be72-fe05-4fc6-88a7-a682f033bf61");
+   private static final UUID DRIVER_ID = UUID.fromString("89d36ee7-ac7a-4d08-b67b-f1dfc769c5ee");
    
    public SoftstepperExtensionDefinition()
    {
    }
 
+
    @Override
    public String getName()
    {
-      return "BWSSoftstepper";
+      return "BWSSoftstepperNative";
    }
    
    @Override
@@ -29,7 +30,7 @@ public class SoftstepperExtensionDefinition extends ControllerExtensionDefinitio
    @Override
    public String getVersion()
    {
-      return "0.2";
+      return "0.1";
    }
 
    @Override
@@ -41,7 +42,7 @@ public class SoftstepperExtensionDefinition extends ControllerExtensionDefinitio
    @Override
    public String getHardwareVendor()
    {
-      return "Keith McMillen";
+      return "systemexklusiv";
    }
    
    @Override

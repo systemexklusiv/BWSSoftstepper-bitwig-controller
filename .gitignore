@@ -1,6 +1,8 @@
 # Created by https://www.toptal.com/developers/gitignore/api/java,intellij+iml
 # Edit at https://www.toptal.com/developers/gitignore?templates=java,intellij+iml
 
+
+*.bin
 ### Intellij+iml ###
 # Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm, CLion, Android Studio, WebStorm and Rider
 # Reference: https://intellij-support.jetbrains.com/hc/en-us/articles/206544839
@@ -116,7 +118,7 @@ hs_err_pid*
 replay_pid*
 
 # Gradle
-.gradle
+.gradle/**
 build/
 
 # Maven

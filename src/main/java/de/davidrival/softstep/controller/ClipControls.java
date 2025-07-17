@@ -56,10 +56,11 @@ public class ClipControls extends SimpleConsolePrinter implements HasControllsFo
 //                            p("! Delete slot by: " + pad);
                         }
                 );
-        ///// Any press for clip launch (simplified)
+        ///// Single press for clip launch (clean edge detection)
         padsToConsiderForCLipLaunch.stream()
-                .filter(p -> p.gestures().isAnyPress())
+                .filter(p -> p.shouldFireFootOnAction())
                 .forEach(pad -> {
+                            pad.markAsHasFired();
                             apiManager.getApiToHost().fireSlotAt(pad.getNumber());
                             pad.notifyControlConsumed();
 //                            p("! Fire slot by: " + pad);
@@ -69,24 +70,28 @@ public class ClipControls extends SimpleConsolePrinter implements HasControllsFo
 
     private boolean processNavigationPads(List<Softstep1Pad> padsToConsiderForNavigation) {
         List<Softstep1Pad> navPads = padsToConsiderForNavigation.stream()
-                .filter(p -> p.gestures().isAnyPress())
+                .filter(p -> p.shouldFireFootOnAction())
                 .collect(Collectors.toList());
 
         for (Softstep1Pad p : navPads) {
             switch (p.getNumber()) {
                 case Page.PAD_INDICES.NAV_UP:
+                    p.markAsHasFired();
                     apiManager.getApiToHost().clipSlotBankUp();
                     p.notifyControlConsumed();
                     return true;
                 case Page.PAD_INDICES.NAV_DOWN:
+                    p.markAsHasFired();
                     apiManager.getApiToHost().clipSlotBankDown();
                     p.notifyControlConsumed();
                     return true;
                 case Page.PAD_INDICES.NAV_LEFT:
+                    p.markAsHasFired();
                     apiManager.getApiToHost().clipSlotBankLeft();
                     p.notifyControlConsumed();
                     return true;
                 case Page.PAD_INDICES.NAV_RIGHT:
+                    p.markAsHasFired();
                     apiManager.getApiToHost().clipSlotBankRight();
                     p.notifyControlConsumed();
                     return true;
@@ -97,18 +102,20 @@ public class ClipControls extends SimpleConsolePrinter implements HasControllsFo
 
     private boolean processChannelStripPads(List<Softstep1Pad> padsToConsiderForChannelStrip, ShortMidiMessage msg) {
         List<Softstep1Pad> channelPads = padsToConsiderForChannelStrip.stream()
-                .filter(p -> p.gestures().isAnyPress())
+                .filter(p -> p.shouldFireFootOnAction())
                 .collect(Collectors.toList());
 
             for (Softstep1Pad p : channelPads) {
                 switch (p.getNumber()) {
                     case Page.PAD_INDICES.MUTE_PAD:
                         // Simple press = mute/unmute toggle
+                        p.markAsHasFired();
                         apiManager.getApiToHost().muteTrack();
                         p.notifyControlConsumed();
                         return true;
                     case Page.PAD_INDICES.ARM_PAD:
                         // Simple press = arm/disarm toggle
+                        p.markAsHasFired();
                         apiManager.getApiToHost().armTrack();
                         p.notifyControlConsumed();
                         return true;

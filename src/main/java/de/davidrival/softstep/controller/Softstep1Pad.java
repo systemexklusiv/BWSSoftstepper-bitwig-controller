@@ -29,6 +29,9 @@ public class Softstep1Pad extends SimpleConsolePrinter {
     @Getter
     /** Flag which tells the Controller class to consider this Pad in triggerering something   */
     private boolean isBeingUsed = false;
+    
+    /** Flag to prevent multiple firing during a single press */
+    private boolean hasAlreadyFiredInThisPress = false;
 
     @Setter
     private Gestures gestures;
@@ -80,6 +83,11 @@ public class Softstep1Pad extends SimpleConsolePrinter {
             distributeToDirections(data1, data2);
 
             gestures.set(this);
+            
+            // Reset firing flag when all directions are 0 (pad released)
+            if (directions.values().stream().allMatch(value -> value == 0)) {
+                hasAlreadyFiredInThisPress = false;
+            }
         }
     }
 
@@ -103,6 +111,7 @@ public class Softstep1Pad extends SimpleConsolePrinter {
     public void notifyControlConsumed() {
         this.gestures.reset(this);
         this.isBeingUsed = false;
+        // DON'T reset hasAlreadyFiredInThisPress here - let it reset only on foot release
     }
 
 
@@ -119,6 +128,14 @@ public class Softstep1Pad extends SimpleConsolePrinter {
 
     public Gestures gestures() {
         return gestures;
+    }
+    
+    public boolean shouldFireFootOnAction() {
+        return gestures.isFootOn() && !hasAlreadyFiredInThisPress;
+    }
+    
+    public void markAsHasFired() {
+        hasAlreadyFiredInThisPress = true;
     }
 }
 

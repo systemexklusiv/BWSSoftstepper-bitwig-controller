@@ -29,6 +29,12 @@ public class Gestures extends SimpleConsolePrinter {
     private boolean isLongPress = false;
 
     private boolean isAnyPress = false;
+    
+    private boolean isFootOff = false;
+    
+    private int previousMaxPressure = 0;
+    
+    private boolean hasAlreadyFired = false;
 
 
 
@@ -43,6 +49,9 @@ public class Gestures extends SimpleConsolePrinter {
         isLongPress = false;
         isDoubleTrigger = false;
         isAnyPress = false;
+        isFootOff = false;
+        previousMaxPressure = 0;
+        hasAlreadyFired = false;
         setFootOnDir(pad, -1);
         setlongPressDir(pad, -1);
         setDoubleTriggerDir(pad, -1);
@@ -54,7 +63,33 @@ public class Gestures extends SimpleConsolePrinter {
 
         this.pressure = dirs.get(pad.getMinData1() + GestureOffsets.pressure.ordinal());
 
-        // Simple detection: any pressure above threshold = press
+        // Simple logic: any direction > 0 = foot on, all directions = 0 = foot off
+        boolean currentFootState = dirs.values().stream().anyMatch(value -> value > 0);
+        
+        // Edge detection for foot on/off (single-fire events)
+        boolean footOnEdge = false;
+        boolean previousFootState = (previousMaxPressure > 0);
+        
+        if (!previousFootState && currentFootState && !hasAlreadyFired) {
+            // Rising edge: foot pressed down (OFF → ON) and hasn't fired yet
+            footOnEdge = true;
+            this.isFootOff = false;
+            hasAlreadyFired = true;
+        } else if (previousFootState && !currentFootState) {
+            // Falling edge: foot lifted up (ON → OFF)
+            footOnEdge = false;
+            this.isFootOff = true;
+            hasAlreadyFired = false; // Reset for next press
+        } else {
+            // No transition or already fired
+            footOnEdge = false;
+            this.isFootOff = false;
+        }
+        
+        // Update previous state (1 if any direction > 0, 0 if all are 0)
+        previousMaxPressure = currentFootState ? 1 : 0;
+        
+        // For backward compatibility
         int maxPressure = pad.calcMaxPressureOfDirections(dirs);
         this.isAnyPress = maxPressure > 10; // Threshold of 10 for any press
 
@@ -83,7 +118,8 @@ public class Gestures extends SimpleConsolePrinter {
                 this.isDoubleTrigger = true;
 //                p("! DOUBLE_TRIGGER on pad: " + pad);
             } else {
-                this.isFootOn = catchDoubleFootOnTrigger(getFootOnValue(pad, dirs));
+                // Use edge detection for clean single-fire foot on events
+                this.isFootOn = footOnEdge;
             }
         }
 
@@ -148,6 +184,10 @@ public class Gestures extends SimpleConsolePrinter {
 
     public boolean isAnyPress() {
         return isAnyPress;
+    }
+    
+    public boolean isFootOff() {
+        return isFootOff;
     }
 
 

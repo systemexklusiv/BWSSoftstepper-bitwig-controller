@@ -82,8 +82,8 @@ public enum Page {
         public static final int ARM_PAD = 6;
         public static final int NAV_LEFT = 7;
         public static final int NAV_RIGHT = 8;
-        public static final int NAV_UP = 9;
-        public static final int NAV_DOWN = 4;
+        public static final int NAV_UP = 4;
+        public static final int NAV_DOWN = 9;
     }
 
 

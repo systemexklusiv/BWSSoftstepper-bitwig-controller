@@ -66,6 +66,7 @@ public class ClipControls extends SimpleConsolePrinter implements HasControllsFo
                         }
                 );
     }
+
     private boolean processNavigationPads(List<Softstep1Pad> padsToConsiderForNavigation) {
         List<Softstep1Pad> navPads = padsToConsiderForNavigation.stream()
                 .filter(p -> p.gestures().isFootOn())

@@ -69,7 +69,7 @@ public class ClipControls extends SimpleConsolePrinter implements HasControllsFo
 
     private boolean processNavigationPads(List<Softstep1Pad> padsToConsiderForNavigation) {
         List<Softstep1Pad> navPads = padsToConsiderForNavigation.stream()
-                .filter(p -> p.gestures().isFootOn())
+                .filter(p -> p.gestures().isAnyPress())
                 .collect(Collectors.toList());
 
         for (Softstep1Pad p : navPads) {
@@ -97,25 +97,19 @@ public class ClipControls extends SimpleConsolePrinter implements HasControllsFo
 
     private boolean processChannelStripPads(List<Softstep1Pad> padsToConsiderForChannelStrip, ShortMidiMessage msg) {
         List<Softstep1Pad> channelPads = padsToConsiderForChannelStrip.stream()
-                .filter(p -> p.gestures().isFootOn() || p.gestures().isLongPress())
+                .filter(p -> p.gestures().isAnyPress())
                 .collect(Collectors.toList());
 
             for (Softstep1Pad p : channelPads) {
                 switch (p.getNumber()) {
                     case Page.PAD_INDICES.MUTE_PAD:
-                        if (p.gestures().isFootOn()) {
-                            apiManager.getApiToHost().muteTrack();
-                        } else {
-                            apiManager.getApiToHost().stopTrack();
-                        }
+                        // Simple press = mute/unmute toggle
+                        apiManager.getApiToHost().muteTrack();
                         p.notifyControlConsumed();
                         return true;
                     case Page.PAD_INDICES.ARM_PAD:
-                        if (p.gestures().isFootOn()) {
-                            apiManager.getApiToHost().armTrack();
-                        } else {
-                            apiManager.getApiToHost().deleteAllSlots();
-                        }
+                        // Simple press = arm/disarm toggle
+                        apiManager.getApiToHost().armTrack();
                         p.notifyControlConsumed();
                         return true;
                 }

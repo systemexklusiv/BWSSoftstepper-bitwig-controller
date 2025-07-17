@@ -7,6 +7,8 @@ import lombok.Setter;
 import lombok.ToString;
 
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 
 @Getter
 @Setter
@@ -35,6 +37,11 @@ public class Gestures extends SimpleConsolePrinter {
     private int previousMaxPressure = 0;
     
     private boolean hasAlreadyFired = false;
+    
+    // Timer-based long press detection
+    private Timer longPressTimer = null;
+    private boolean isTimerLongPress = false;
+    private static final int LONG_PRESS_DELAY_MS = 1500; // 1.5 seconds
 
 
 
@@ -52,6 +59,14 @@ public class Gestures extends SimpleConsolePrinter {
         isFootOff = false;
         previousMaxPressure = 0;
         hasAlreadyFired = false;
+        isTimerLongPress = false;
+        
+        // Cancel any running timer
+        if (longPressTimer != null) {
+            longPressTimer.cancel();
+            longPressTimer = null;
+        }
+        
         setFootOnDir(pad, -1);
         setlongPressDir(pad, -1);
         setDoubleTriggerDir(pad, -1);
@@ -75,11 +90,17 @@ public class Gestures extends SimpleConsolePrinter {
             footOnEdge = true;
             this.isFootOff = false;
             hasAlreadyFired = true;
+            
+            // Start long press timer
+            startLongPressTimer();
         } else if (previousFootState && !currentFootState) {
             // Falling edge: foot lifted up (ON → OFF)
             footOnEdge = false;
             this.isFootOff = true;
             hasAlreadyFired = false; // Reset for next press
+            
+            // Cancel long press timer
+            cancelLongPressTimer();
         } else {
             // No transition or already fired
             footOnEdge = false;
@@ -110,17 +131,15 @@ public class Gestures extends SimpleConsolePrinter {
 //            p("! reset DOUBLE_TRIGGER on pad: " + pad);
         }
 
-        if (getLongPressValue(pad, dirs) == EXPECTED_ON_VALUE) {
-            this.isLongPress = true;
-//            p("! Found LONG_PRESS on pad: " + pad);
+        // Use timer-based long press instead of pressure-based
+        this.isLongPress = isTimerLongPress;
+        
+        if (getDoubleTriggerValue(pad, dirs) == EXPECTED_ON_VALUE) {
+            this.isDoubleTrigger = true;
+//            p("! DOUBLE_TRIGGER on pad: " + pad);
         } else {
-            if (getDoubleTriggerValue(pad, dirs) == EXPECTED_ON_VALUE) {
-                this.isDoubleTrigger = true;
-//                p("! DOUBLE_TRIGGER on pad: " + pad);
-            } else {
-                // Use edge detection for clean single-fire foot on events
-                this.isFootOn = footOnEdge;
-            }
+            // Use edge detection for clean single-fire foot on events
+            this.isFootOn = footOnEdge;
         }
 
 
@@ -128,23 +147,6 @@ public class Gestures extends SimpleConsolePrinter {
     }
 
     private int footOnCounter = 0;
-
-    /**
-     * Fix that foot on comes in from Softstep 2 times
-     * @param footOnData2 the expected value from hardware which denotes state 'on'
-     * @return true if a footOn is registered
-     */
-    private boolean catchDoubleFootOnTrigger(int footOnData2) {
-        if (footOnData2 == EXPECTED_ON_VALUE) {
-            footOnCounter++;
-            if (footOnCounter > 2) {
-                footOnCounter = 0;
-//                p("! FOOT_ON on pad: ");
-                return true;
-            }
-        }
-        return false;
-    }
 
     private int getFootOnValue(Softstep1Pad pad, Map<Integer, Integer> dirs) {
         return dirs.get(footOnDirectionsIndex(pad));
@@ -188,6 +190,28 @@ public class Gestures extends SimpleConsolePrinter {
     
     public boolean isFootOff() {
         return isFootOff;
+    }
+    
+    private void startLongPressTimer() {
+        // Cancel existing timer if any
+        cancelLongPressTimer();
+        
+        longPressTimer = new Timer();
+        longPressTimer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                isTimerLongPress = true;
+                // Timer completes, long press detected
+            }
+        }, LONG_PRESS_DELAY_MS);
+    }
+    
+    private void cancelLongPressTimer() {
+        if (longPressTimer != null) {
+            longPressTimer.cancel();
+            longPressTimer = null;
+        }
+        isTimerLongPress = false;
     }
 
 

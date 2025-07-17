@@ -101,6 +101,27 @@ public class ClipControls extends SimpleConsolePrinter implements HasControllsFo
     }
 
     private boolean processChannelStripPads(List<Softstep1Pad> padsToConsiderForChannelStrip, ShortMidiMessage msg) {
+        // Check for long press actions first
+        List<Softstep1Pad> longPressChannelPads = padsToConsiderForChannelStrip.stream()
+                .filter(p -> p.gestures().isLongPress())
+                .collect(Collectors.toList());
+                
+        for (Softstep1Pad p : longPressChannelPads) {
+            switch (p.getNumber()) {
+                case Page.PAD_INDICES.MUTE_PAD:
+                    // Long press = stop all clips on current track
+                    apiManager.getApiToHost().stopTrack();
+                    p.notifyControlConsumed();
+                    return true;
+                case Page.PAD_INDICES.ARM_PAD:
+                    // Long press = delete all clips on current track
+                    apiManager.getApiToHost().deleteAllSlots();
+                    p.notifyControlConsumed();
+                    return true;
+            }
+        }
+        
+        // Check for short press actions
         List<Softstep1Pad> channelPads = padsToConsiderForChannelStrip.stream()
                 .filter(p -> p.shouldFireFootOnAction())
                 .collect(Collectors.toList());

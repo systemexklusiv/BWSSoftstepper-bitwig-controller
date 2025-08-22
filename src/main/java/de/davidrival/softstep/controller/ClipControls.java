@@ -52,6 +52,7 @@ public class ClipControls extends SimpleConsolePrinter implements HasControllsFo
                 .filter(p -> p.gestures().isLongPress())
                 .forEach(pad -> {
                             apiManager.getApiToHost().deleteSlotAt(pad.getNumber());
+                            pad.gestures().clearLongPressEvent(); // Clear the long press event
                             pad.notifyControlConsumed();
 //                            p("! Delete slot by: " + pad);
                         }
@@ -111,11 +112,13 @@ public class ClipControls extends SimpleConsolePrinter implements HasControllsFo
                 case Page.PAD_INDICES.MUTE_PAD:
                     // Long press = stop all clips on current track
                     apiManager.getApiToHost().stopTrack();
+                    p.gestures().clearLongPressEvent(); // Clear the long press event
                     p.notifyControlConsumed();
                     return true;
                 case Page.PAD_INDICES.ARM_PAD:
                     // Long press = delete all clips on current track
                     apiManager.getApiToHost().deleteAllSlots();
+                    p.gestures().clearLongPressEvent(); // Clear the long press event
                     p.notifyControlConsumed();
                     return true;
             }

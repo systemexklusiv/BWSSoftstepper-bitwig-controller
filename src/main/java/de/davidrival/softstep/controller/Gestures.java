@@ -15,9 +15,6 @@ import java.util.TimerTask;
 @ToString
 public class Gestures extends SimpleConsolePrinter {
 
-    private static final int AMOUNT_GESTURES_PER_PAD = 4;
-    public static final int EXPECTED_ON_VALUE = 127;
-
     public enum GestureOffsets {
         pressure, footOn, doubleTrigger, longPress
     }
@@ -69,32 +66,10 @@ public class Gestures extends SimpleConsolePrinter {
     
     // Timer for long press detection
     private Timer longPressTimer = null;
-    private static final int LONG_PRESS_DELAY_MS = 1500; // 1.5 seconds
-
-
+    private static final int LONG_PRESS_DELAY_MS = 900; // 1.5 seconds
 
     public Gestures(ControllerHost hostOrNull) {
         super(hostOrNull);
-    }
-
-    public void reset(Softstep1Pad pad) {
-        // Force reset to IDLE state - this should only be called when we're
-        // sure the pad is not being pressed (e.g., on application exit)
-        currentState = PadState.IDLE;
-        currentPressure = 0;
-        
-        // Clear all events
-        footOnEvent = false;
-        longPressEvent = false;
-        footOffEvent = false;
-        
-        // Cancel any running timer
-        cancelLongPressTimer();
-        
-        // Clear legacy direction mappings (still needed by the hardware layer)
-        setFootOnDir(pad, -1);
-        setlongPressDir(pad, -1);
-        setDoubleTriggerDir(pad, -1);
     }
 
     public boolean set(Softstep1Pad pad) {
@@ -118,8 +93,8 @@ public class Gestures extends SimpleConsolePrinter {
     
     private void clearEvents() {
         footOnEvent = false;
-        longPressEvent = false;
         footOffEvent = false;
+        // Don't clear longPressEvent here - it should persist until consumed
     }
     
     private PadState updateStateMachine(PressureProfile profile) {
@@ -192,6 +167,11 @@ public class Gestures extends SimpleConsolePrinter {
     
     public int getPressure() {
         return currentPressure;
+    }
+    
+    // Method to clear long press event after it's been consumed
+    public void clearLongPressEvent() {
+        longPressEvent = false;
     }
     
     // For backward compatibility until all references are updated

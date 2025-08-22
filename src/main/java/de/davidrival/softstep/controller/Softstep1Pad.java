@@ -76,18 +76,13 @@ public class Softstep1Pad extends SimpleConsolePrinter {
      */
     public void update(int data1, int data2) {
         if (directions.get(data1) != data2) {
-
-            ////// Set this flag so this control wil be considered
+            // Set this flag so this control will be considered
             markControlUsed();
 
             distributeToDirections(data1, data2);
 
+            // Update gesture detection with new pressure data
             gestures.set(this);
-            
-            // Reset firing flag when all directions are 0 (pad released)
-            if (directions.values().stream().allMatch(value -> value == 0)) {
-                hasAlreadyFiredInThisPress = false;
-            }
         }
     }
 
@@ -109,9 +104,9 @@ public class Softstep1Pad extends SimpleConsolePrinter {
      * for more user input.
      */
     public void notifyControlConsumed() {
-        this.gestures.reset(this);
+        // Only mark as not being used - don't reset gestures during active press
         this.isBeingUsed = false;
-        // DON'T reset hasAlreadyFiredInThisPress here - let it reset only on foot release
+        // Gesture state is managed internally by the state machine
     }
 
 
@@ -131,11 +126,11 @@ public class Softstep1Pad extends SimpleConsolePrinter {
     }
     
     public boolean shouldFireFootOnAction() {
-        return gestures.isFootOn() && !hasAlreadyFiredInThisPress;
+        return gestures.isFootOn();  // Simple - no more double tracking
     }
     
     public void markAsHasFired() {
-        hasAlreadyFiredInThisPress = true;
+        // No longer needed - state machine handles this internally
     }
 }
 

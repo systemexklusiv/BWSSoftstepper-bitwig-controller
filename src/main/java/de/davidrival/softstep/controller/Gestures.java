@@ -21,26 +21,54 @@ public class Gestures extends SimpleConsolePrinter {
     public enum GestureOffsets {
         pressure, footOn, doubleTrigger, longPress
     }
-
-    private int pressure = 0;
-
-    private boolean isFootOn = false;
-
-    private boolean isDoubleTrigger = false;
-
-    private boolean isLongPress = false;
-
-    private boolean isAnyPress = false;
     
-    private boolean isFootOff = false;
+    public enum PadState {
+        IDLE,           // All corners below threshold
+        INITIAL_PRESS,  // First press detected - can fire actions
+        HELD,          // Foot held down - prevents retriggering
+        RELEASING      // Transitioning back to IDLE
+    }
     
-    private int previousMaxPressure = 0;
+    // Pressure profile for 4-corner analysis
+    public static class PressureProfile {
+        public final int maxCorner;
+        public final int totalPressure;
+        public final int activeCorners;
+        
+        public PressureProfile(Map<Integer, Integer> directions) {
+            this.maxCorner = directions.values().stream()
+                .mapToInt(Integer::intValue)
+                .max()
+                .orElse(0);
+            this.totalPressure = directions.values().stream()
+                .mapToInt(Integer::intValue)
+                .sum();
+            this.activeCorners = (int) directions.values().stream()
+                .mapToInt(Integer::intValue)
+                .filter(v -> v > 5)  // Count corners with significant pressure
+                .count();
+        }
+        
+        public boolean isValidPress() {
+            return maxCorner > 10 && activeCorners >= 1;
+        }
+        
+        public boolean isCleanRelease() {
+            return maxCorner < 5 && totalPressure < 20;
+        }
+    }
+
+    // Clean state machine variables
+    private PadState currentState = PadState.IDLE;
+    private int currentPressure = 0;  // Current max pressure from all corners
     
-    private boolean hasAlreadyFired = false;
+    // Events that can be detected
+    private boolean footOnEvent = false;      // Single-fire press event
+    private boolean longPressEvent = false;  // Long press detected
+    private boolean footOffEvent = false;    // Single-fire release event
     
-    // Timer-based long press detection
+    // Timer for long press detection
     private Timer longPressTimer = null;
-    private boolean isTimerLongPress = false;
     private static final int LONG_PRESS_DELAY_MS = 1500; // 1.5 seconds
 
 
@@ -50,116 +78,132 @@ public class Gestures extends SimpleConsolePrinter {
     }
 
     public void reset(Softstep1Pad pad) {
-        pressure = 0;
-        isFootOn = false;
-        footOnCounter = 0;
-        isLongPress = false;
-        isDoubleTrigger = false;
-        isAnyPress = false;
-        isFootOff = false;
-        previousMaxPressure = 0;
-        hasAlreadyFired = false;
-        isTimerLongPress = false;
+        // Force reset to IDLE state - this should only be called when we're
+        // sure the pad is not being pressed (e.g., on application exit)
+        currentState = PadState.IDLE;
+        currentPressure = 0;
+        
+        // Clear all events
+        footOnEvent = false;
+        longPressEvent = false;
+        footOffEvent = false;
         
         // Cancel any running timer
-        if (longPressTimer != null) {
-            longPressTimer.cancel();
-            longPressTimer = null;
-        }
+        cancelLongPressTimer();
         
+        // Clear legacy direction mappings (still needed by the hardware layer)
         setFootOnDir(pad, -1);
         setlongPressDir(pad, -1);
         setDoubleTriggerDir(pad, -1);
-//        p("reset pad: " + pad);
     }
 
     public boolean set(Softstep1Pad pad) {
         Map<Integer, Integer> dirs = pad.getDirections();
-
-        this.pressure = dirs.get(pad.getMinData1() + GestureOffsets.pressure.ordinal());
-
-        // Simple logic: any direction > 0 = foot on, all directions = 0 = foot off
-        boolean currentFootState = dirs.values().stream().anyMatch(value -> value > 0);
         
-        // Edge detection for foot on/off (single-fire events)
-        boolean footOnEdge = false;
-        boolean previousFootState = (previousMaxPressure > 0);
+        // Clear previous events
+        clearEvents();
         
-        if (!previousFootState && currentFootState && !hasAlreadyFired) {
-            // Rising edge: foot pressed down (OFF → ON) and hasn't fired yet
-            footOnEdge = true;
-            this.isFootOff = false;
-            hasAlreadyFired = true;
-            
-            // Start long press timer
-            startLongPressTimer();
-        } else if (previousFootState && !currentFootState) {
-            // Falling edge: foot lifted up (ON → OFF)
-            footOnEdge = false;
-            this.isFootOff = true;
-            hasAlreadyFired = false; // Reset for next press
-            
-            // Cancel long press timer
-            cancelLongPressTimer();
-        } else {
-            // No transition or already fired
-            footOnEdge = false;
-            this.isFootOff = false;
-        }
+        // Analyze pressure from all 4 corners
+        PressureProfile profile = new PressureProfile(dirs);
         
-        // Update previous state (1 if any direction > 0, 0 if all are 0)
-        previousMaxPressure = currentFootState ? 1 : 0;
+        // Update current pressure for UserControlls
+        currentPressure = profile.maxCorner;
         
-        // For backward compatibility
-        int maxPressure = pad.calcMaxPressureOfDirections(dirs);
-        this.isAnyPress = maxPressure > 10; // Threshold of 10 for any press
-
-//        if(isFootOn && (pressure <= OFF_THRESHOLD)  ) {
-        if (isFootOn) {
-            setFootOnDir(pad, 0);
-            this.isFootOn = false;
-//            p("! reset FOOT_ON on pad: " + pad);
-        }
-        if (isLongPress) {
-            setlongPressDir(pad, 0);
-            this.isLongPress = false;
-//            p("! reset LONG_PRESS on pad: " + pad);
-        }
-        if (isDoubleTrigger) {
-            setDoubleTriggerDir(pad, 0);
-            this.isDoubleTrigger = false;
-//            p("! reset DOUBLE_TRIGGER on pad: " + pad);
-        }
-
-        // Use timer-based long press instead of pressure-based
-        this.isLongPress = isTimerLongPress;
+        // Update state machine and generate events
+        PadState nextState = updateStateMachine(profile);
+        currentState = nextState;
         
-        if (getDoubleTriggerValue(pad, dirs) == EXPECTED_ON_VALUE) {
-            this.isDoubleTrigger = true;
-//            p("! DOUBLE_TRIGGER on pad: " + pad);
-        } else {
-            // Use edge detection for clean single-fire foot on events
-            this.isFootOn = footOnEdge;
-        }
-
-
         return true;
     }
-
-    private int footOnCounter = 0;
-
-    private int getFootOnValue(Softstep1Pad pad, Map<Integer, Integer> dirs) {
-        return dirs.get(footOnDirectionsIndex(pad));
+    
+    private void clearEvents() {
+        footOnEvent = false;
+        longPressEvent = false;
+        footOffEvent = false;
+    }
+    
+    private PadState updateStateMachine(PressureProfile profile) {
+        switch (currentState) {
+            case IDLE:
+                if (profile.isValidPress()) {
+                    footOnEvent = true;  // Fire press event
+                    startLongPressTimer();
+                    return PadState.INITIAL_PRESS;
+                }
+                return PadState.IDLE;
+                
+            case INITIAL_PRESS:
+                if (profile.isCleanRelease()) {
+                    footOffEvent = true;  // Fire release event
+                    cancelLongPressTimer();
+                    return PadState.IDLE;  // Direct transition to IDLE
+                }
+                // Move to HELD to prevent re-triggering
+                return PadState.HELD;
+                
+            case HELD:
+                if (profile.isCleanRelease()) {
+                    footOffEvent = true;  // Fire release event
+                    cancelLongPressTimer();
+                    return PadState.IDLE;  // Direct transition to IDLE
+                }
+                return PadState.HELD;
+                
+            case RELEASING:
+                // This state is no longer needed with clean release detection
+                return PadState.IDLE;
+                
+            default:
+                return PadState.IDLE;
+        }
+    }
+    
+    private void startLongPressTimer() {
+        cancelLongPressTimer();  // Cancel any existing timer
+        
+        longPressTimer = new Timer();
+        longPressTimer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                longPressEvent = true;  // Set long press event
+            }
+        }, LONG_PRESS_DELAY_MS);
+    }
+    
+    private void cancelLongPressTimer() {
+        if (longPressTimer != null) {
+            longPressTimer.cancel();
+            longPressTimer = null;
+        }
+    }
+    
+    // Public getters for events
+    public boolean isFootOn() {
+        return footOnEvent;
+    }
+    
+    public boolean isLongPress() {
+        return longPressEvent;
+    }
+    
+    public boolean isFootOff() {
+        return footOffEvent;
+    }
+    
+    public int getPressure() {
+        return currentPressure;
+    }
+    
+    // For backward compatibility until all references are updated
+    public boolean isAnyPress() {
+        return currentState != PadState.IDLE;
+    }
+    
+    public boolean isDoubleTrigger() {
+        return false; // Not implemented in new system
     }
 
-    private int getDoubleTriggerValue(Softstep1Pad pad, Map<Integer, Integer> dirs) {
-        return dirs.get(doubleTriggerDirectionsIndex(pad));
-    }
-
-    private int getLongPressValue(Softstep1Pad pad, Map<Integer, Integer> dirs) {
-        return dirs.get(longPressDirectionsIndex(pad));
-    }
-
+    // Legacy methods still needed for hardware direction mapping
     private Integer setFootOnDir(Softstep1Pad pad, int value) {
         return pad.getDirections().put(footOnDirectionsIndex(pad), value);
     }
@@ -182,36 +226,6 @@ public class Gestures extends SimpleConsolePrinter {
 
     private int longPressDirectionsIndex(Softstep1Pad pad) {
         return pad.getMinData1() + GestureOffsets.longPress.ordinal();
-    }
-
-    public boolean isAnyPress() {
-        return isAnyPress;
-    }
-    
-    public boolean isFootOff() {
-        return isFootOff;
-    }
-    
-    private void startLongPressTimer() {
-        // Cancel existing timer if any
-        cancelLongPressTimer();
-        
-        longPressTimer = new Timer();
-        longPressTimer.schedule(new TimerTask() {
-            @Override
-            public void run() {
-                isTimerLongPress = true;
-                // Timer completes, long press detected
-            }
-        }, LONG_PRESS_DELAY_MS);
-    }
-    
-    private void cancelLongPressTimer() {
-        if (longPressTimer != null) {
-            longPressTimer.cancel();
-            longPressTimer = null;
-        }
-        isTimerLongPress = false;
     }
 
 

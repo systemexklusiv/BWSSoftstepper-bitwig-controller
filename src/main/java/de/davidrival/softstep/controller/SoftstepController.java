@@ -100,35 +100,40 @@ public class SoftstepController extends SimpleConsolePrinter {
                 );
     }
 
-    // in hosted mode the NavPAd uo and down can just be configured as inc dec
-    // therefor I store the current data2 and is the next is greater I swap to clip
-    // otherwise to control mode
-    private int valueStore = -1;
+    // Navigation pad with 4 directions - any press cycles between pages
+    // North: data1=82, East: data1=81, South: data1=83, West: data1=80
+    private static final int[] NAV_PAD_ADDRESSES = {80, 81, 82, 83};
+    private boolean[] navPadPressed = new boolean[4]; // Track which directions are pressed
+    
     private boolean isMidiUsedForPageChange(ShortMidiMessage msg) {
         if (msg.getStatusByte() == SoftstepHardwareBase.STATUS_BYTE) {
-                if (msg.getData1() == SoftstepHardwareBase.NAVIGATION_DATA1) {
-
-                    if (valueStore == -1) {
-                        valueStore = msg.getData2();
+            // Check if this is one of the 4 navigation pad directions
+            for (int i = 0; i < NAV_PAD_ADDRESSES.length; i++) {
+                if (msg.getData1() == NAV_PAD_ADDRESSES[i]) {
+                    boolean wasPressed = navPadPressed[i];
+                    boolean isPressed = msg.getData2() > 10; // Threshold for press detection
+                    navPadPressed[i] = isPressed;
+                    
+                    // On rising edge (not pressed -> pressed), cycle pages
+                    if (!wasPressed && isPressed) {
+                        cyclePage();
                         return true;
                     }
-
-                    if (msg.getData2() > valueStore && !pages.getCurrentPage().equals(Page.CLIP)) {
-                        pages.setCurrentPage(Page.CLIP);
-                        display();
-
-                        return true;
-                    }
-                    if (msg.getData2() < valueStore && !pages.getCurrentPage().equals(Page.USER)) {
-                        pages.setCurrentPage(Page.USER);
-                        display();
-                        return true;
-                    }
+                    return true; // Consume all navigation pad messages
                 }
-                valueStore = msg.getData2();
+            }
         }
-
         return false;
+    }
+    
+    private void cyclePage() {
+        // Simple cycle between the two available pages
+        if (pages.getCurrentPage().equals(Page.CLIP)) {
+            pages.setCurrentPage(Page.USER);
+        } else {
+            pages.setCurrentPage(Page.CLIP);
+        }
+        display();
     }
 
 

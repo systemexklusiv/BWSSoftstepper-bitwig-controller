@@ -71,15 +71,7 @@ public class Controls extends SimpleConsolePrinter {
                         p("matched pad: " + pad);
                         p("-------------------------");
 
-
                         pad.update(msg.getData1(), msg.getData2());
-
-
-
-//                        if (pad.getPressure() != msg.getData2()) {
-//                            pad.setPressure(msg.getData2());
-//                            pad.setHasChanged(true);
-//                        }
 
                     });
         }

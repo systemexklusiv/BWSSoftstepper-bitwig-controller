@@ -173,40 +173,5 @@ public class Gestures extends SimpleConsolePrinter {
     public void clearLongPressEvent() {
         longPressEvent = false;
     }
-    
-    // For backward compatibility until all references are updated
-    public boolean isAnyPress() {
-        return currentState != PadState.IDLE;
-    }
-    
-    public boolean isDoubleTrigger() {
-        return false; // Not implemented in new system
-    }
-
-    // Legacy methods still needed for hardware direction mapping
-    private Integer setFootOnDir(Softstep1Pad pad, int value) {
-        return pad.getDirections().put(footOnDirectionsIndex(pad), value);
-    }
-
-    private Integer setDoubleTriggerDir(Softstep1Pad pad, int value) {
-        return pad.getDirections().put(doubleTriggerDirectionsIndex(pad), value);
-    }
-
-    private Integer setlongPressDir(Softstep1Pad pad, int value) {
-        return pad.getDirections().put(longPressDirectionsIndex(pad), value);
-    }
-
-    private int footOnDirectionsIndex(Softstep1Pad pad) {
-        return pad.getMinData1() + GestureOffsets.footOn.ordinal();
-    }
-
-    private int doubleTriggerDirectionsIndex(Softstep1Pad pad) {
-        return pad.getMinData1() + GestureOffsets.doubleTrigger.ordinal();
-    }
-
-    private int longPressDirectionsIndex(Softstep1Pad pad) {
-        return pad.getMinData1() + GestureOffsets.longPress.ordinal();
-    }
-
 
 }

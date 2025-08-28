@@ -38,7 +38,8 @@ public class SoftstepController extends SimpleConsolePrinter {
     public SoftstepController(
             ControllerPages controllerPages
             , SoftstepHardware softstepHardware
-            , ControllerHost hostOrNull) {
+            , ControllerHost hostOrNull
+            , PadConfigurationManager padConfigManager) {
 
         super(hostOrNull);
         this.pages = controllerPages;
@@ -49,7 +50,7 @@ public class SoftstepController extends SimpleConsolePrinter {
 
         hasControllsForPages = new ArrayList<>();
         HasControllsForPage clipControlls = new ClipControls(Page.CLIP, apiManager);
-        HasControllsForPage userControlls = new UserControlls(Page.USER, apiManager);
+        HasControllsForPage userControlls = new UserControlls(Page.USER, apiManager, padConfigManager);
         hasControllsForPages.add(clipControlls);
         hasControllsForPages.add(userControlls);
 
@@ -65,6 +66,8 @@ public class SoftstepController extends SimpleConsolePrinter {
 
         // don't forward midi if consumed for page change
         if (isMidiUsedForPageChange(msg)) return;
+
+        // TODO find out what DATA1 is in native mode for padek
 //        if (checkPedal(msg)) return;
 
         controls.update(msg);
@@ -104,7 +107,7 @@ public class SoftstepController extends SimpleConsolePrinter {
     // North: data1=82, East: data1=81, South: data1=83, West: data1=80
     private static final int[] NAV_PAD_ADDRESSES = {80, 81, 82, 83};
     private boolean[] navPadPressed = new boolean[4]; // Track which directions are pressed
-    
+
     private boolean isMidiUsedForPageChange(ShortMidiMessage msg) {
         if (msg.getStatusByte() == SoftstepHardwareBase.STATUS_BYTE) {
             // Check if this is one of the 4 navigation pad directions

@@ -36,12 +36,12 @@ public class Controls extends SimpleConsolePrinter {
                 makePad(1, new int[]{52, 53, 55, 54}), // Pad 1 (index 1) - lower 2nd → Clip 1
                 makePad(2, new int[]{60, 61, 63, 62}), // Pad 2 (index 2) - lower 3rd → Clip 2
                 makePad(3, new int[]{68, 69, 71, 70}), // Pad 3 (index 3) - lower 4th → Clip 3
-                makePad(9, new int[]{76, 77, 79, 78}), // Pad 9 (index 4) - lower right → Bank down
+                makePad(4, new int[]{76, 77, 79, 78}), // Pad 4 (index 4) - lower right → FIXED: was 9
                 makePad(5, new int[]{40, 41, 43, 42}), // Pad 5 (index 5) - upper left → Mixer
                 makePad(6, new int[]{48, 49, 51, 50}), // Pad 6 (index 6) - upper 2nd → Mixer
                 makePad(7, new int[]{56, 57, 59, 58}), // Pad 7 (index 7) - upper 3rd → Bank left
                 makePad(8, new int[]{64, 65, 67, 66}), // Pad 8 (index 8) - upper 4th → Bank right
-                makePad(4, new int[]{72, 73, 75, 74})  // Pad 4 (index 9) - upper right → Bank up
+                makePad(9, new int[]{72, 73, 75, 74})  // Pad 9 (index 9) - upper right → FIXED: was 4
         ));
     }
 
@@ -62,14 +62,14 @@ public class Controls extends SimpleConsolePrinter {
     }
 
     public void update(ShortMidiMessage msg) {
-                        p("-------------------------");
-                        p("incoming midi: " + msg);
+  //                      p("-------------------------");
+  //                      p("incoming midi: " + msg);
         if (msg.getStatusByte() == SoftstepHardwareBase.STATUS_BYTE) {
             pads.stream().filter(pad -> pad.inRange(msg.getData1()))
                     .findFirst().ifPresent(pad -> {
 
-                        p("matched pad: " + pad);
-                        p("-------------------------");
+   //                     p("matched pad: " + pad);
+   //                     p("-------------------------");
 
                         pad.update(msg.getData1(), msg.getData2());
 

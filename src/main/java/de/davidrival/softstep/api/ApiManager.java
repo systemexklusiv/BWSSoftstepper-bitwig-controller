@@ -131,5 +131,13 @@ public class ApiManager {
         timer2.cancel();
         timer2=null;
     }
+    
+    public SoftstepController getSoftstepController() {
+        return softstepController;
+    }
+    
+    public void setSoftstepController(SoftstepController softstepController) {
+        this.softstepController = softstepController;
+    }
 
 }

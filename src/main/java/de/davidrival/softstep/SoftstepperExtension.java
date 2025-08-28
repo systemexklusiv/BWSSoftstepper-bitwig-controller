@@ -7,6 +7,7 @@ import com.bitwig.extension.controller.ControllerExtension;
 import de.davidrival.softstep.api.ApiManager;
 import de.davidrival.softstep.controller.ControllerPages;
 import de.davidrival.softstep.controller.Page;
+import de.davidrival.softstep.controller.PadConfigurationManager;
 import de.davidrival.softstep.controller.SoftstepController;
 import de.davidrival.softstep.hardware.SoftstepHardware;
 
@@ -18,6 +19,7 @@ public class SoftstepperExtension extends ControllerExtension
    Transport transport;
 
    SoftstepController softstepController;
+   PadConfigurationManager padConfigurationManager;
 
 
    protected SoftstepperExtension(final SoftstepperExtensionDefinition definition, final ControllerHost host)
@@ -30,11 +32,7 @@ public class SoftstepperExtension extends ControllerExtension
    {
       final ControllerHost host = getHost();
 
-//      String[] options = {"option1", "option2"};
-//      Preferences preferences = host.getPreferences();
-//
-//      SettableEnumValue enumSetting = preferences.getEnumSetting("Mode", "Global", options, options[0]);
-//      enumSetting.addValueObserver(newValue -> host.println(" Enum Setting Changed to :" + newValue));
+      padConfigurationManager = new PadConfigurationManager(host);
 
       transport = host.createTransport();
       midiIn = host.getMidiInPort(0);
@@ -49,6 +47,7 @@ public class SoftstepperExtension extends ControllerExtension
       softstepController = new SoftstepController(controllerPages
               , softstepHardware
               , host
+              , padConfigurationManager
       );
 
       softstepController.display();

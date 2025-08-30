@@ -34,7 +34,44 @@ public class UserControlls extends SimpleConsolePrinter implements HasControllsF
             
             PadConfigurationManager.PadConfig config = padConfigManager.getPadConfig(i);
             incrementValues[i] = config.min;
+            
+            // Set initial LED states to match actual pad states
+            updateInitialHardwareFeedback(i, config);
         }
+    }
+    
+    private void updateInitialHardwareFeedback(int padIndex, PadConfigurationManager.PadConfig config) {
+        // Set LED to match initial pad state based on mode
+        LedStates initialLedState;
+        
+        switch (config.mode) {
+            case TOGGLE:
+                // Toggle starts OFF (false), so show TOGGLE_OFF state
+                initialLedState = Page.USER_LED_STATES.TOGGLE_OFF;
+                break;
+                
+            case INCREMENT:
+                // INCREMENT starts at min value, so show INCREMENT_MIN state
+                initialLedState = Page.USER_LED_STATES.INCREMENT_MIN;
+                break;
+                
+            case MOMENTARY:
+                // MOMENTARY starts released, so show MOMENTARY_RELEASED state
+                initialLedState = Page.USER_LED_STATES.MOMENTARY_RELEASED;
+                break;
+                
+            case PRESSURE:
+                // PRESSURE starts released, so show PRESSURE_RELEASED state  
+                initialLedState = Page.USER_LED_STATES.PRESSURE_RELEASED;
+                break;
+                
+            default:
+                initialLedState = Page.USER_LED_STATES.DISABLED;
+                break;
+        }
+        
+        // Update hardware LED to initial state
+        apiManager.getSoftstepController().updateLedStates(Page.USER, padIndex, initialLedState);
     }
 
     @Override
@@ -44,11 +81,83 @@ public class UserControlls extends SimpleConsolePrinter implements HasControllsF
 
     @Override
     public void processControlls(List<Softstep1Pad> pushedDownPads, ShortMidiMessage msg) {
-        // Process only the pads that are actively being touched
+        // First check for long press actions - these have priority
+        processPadLongPress(pushedDownPads);
+        
+        // Process normal pad functionality
         pushedDownPads.forEach(pad -> {
             processPadWithConfiguration(pad);
             pad.notifyControlConsumed();
         });
+    }
+    
+    private void processPadLongPress(List<Softstep1Pad> pushedDownPads) {
+        // Process long press actions for each pad (only if enabled)
+        pushedDownPads.stream()
+                .filter(pad -> pad.gestures().isLongPress())
+                .filter(pad -> {
+                    PadConfigurationManager.PadConfig config = padConfigManager.getPadConfig(pad.getNumber());
+                    return config.longPressEnabled; // Only process if long press is enabled
+                })
+                .forEach(pad -> {
+                    handlePadLongPress(pad);
+                    pad.gestures().clearLongPressEvent(); // Clear the long press event
+                    pad.notifyControlConsumed();
+                });
+    }
+    
+    private void handlePadLongPress(Softstep1Pad pad) {
+        int padIndex = pad.getNumber();
+        PadConfigurationManager.PadConfig config = padConfigManager.getPadConfig(padIndex);
+        
+        // Send the configured long press value (always send full value - no range scaling for long press)
+        int longPressValue = config.longPressValue;
+        
+        // Clamp to 0-127 range
+        longPressValue = Math.max(0, Math.min(127, longPressValue));
+        
+        // Send to separate UserControl: pad 0-9 use UserControl 10-19 for long press
+        int longPressUserControlIndex = padIndex + 10;
+        apiManager.getApiToHost().setValueOfUserControl(longPressUserControlIndex, longPressValue);
+        
+        // Update hardware LED to show long press was triggered (brief flash)
+        updateHardwareLongPressFeedback(padIndex);
+        
+        // Debug logging
+        double normalizedDisplay = longPressValue / 127.0;
+        p(String.format("LONG PRESS Pad %d → UserControl%d: sent value %d (%.3f normalized, configured: %d)", 
+            padIndex, longPressUserControlIndex, longPressValue, normalizedDisplay, config.longPressValue));
+    }
+    
+    private void updateHardwareLongPressFeedback(int padIndex) {
+        // Brief yellow flash to indicate long press was triggered using Page constants
+        apiManager.getSoftstepController().updateLedStates(Page.USER, padIndex, Page.USER_LED_STATES.LONG_PRESS_FLASH);
+        
+        // Restore normal LED state after brief delay (via simple timer)
+        // Note: In production, you might want to use a more sophisticated timing mechanism
+        new java.util.Timer().schedule(new java.util.TimerTask() {
+            @Override
+            public void run() {
+                // Restore based on current state - get fresh config in case it changed
+                PadConfigurationManager.PadConfig config = padConfigManager.getPadConfig(padIndex);
+                int currentOutputValue = getCurrentPadOutputValue(padIndex, config);
+                updateHardwareFeedback(padIndex, config, currentOutputValue);
+            }
+        }, 500); // 500ms flash duration
+    }
+    
+    private int getCurrentPadOutputValue(int padIndex, PadConfigurationManager.PadConfig config) {
+        // Get the current output value based on pad mode and internal state
+        switch (config.mode) {
+            case TOGGLE:
+                return toggleStates[padIndex] ? config.max : config.min;
+            case INCREMENT:
+                return incrementValues[padIndex];
+            case PRESSURE:
+            case MOMENTARY:
+            default:
+                return config.min; // Default to minimum when not actively pressed
+        }
     }
     
     private void processPadWithConfiguration(Softstep1Pad pad) {
@@ -88,11 +197,13 @@ public class UserControlls extends SimpleConsolePrinter implements HasControllsF
                 break;
                 
             case INCREMENT:
-                if (gestures.isFootOn()) {  // Only increment on press
-                    outputValue = processIncrementMode(padIndex, config);
-                    sendValue = true;
+                if (gestures.isFootOn()) {  // Increment on press
+                    processIncrementMode(padIndex, config);
                     updateHardware = true;
                 }
+                // Always send current increment value (like toggle mode)
+                outputValue = incrementValues[padIndex];
+                sendValue = true;
                 break;
         }
         
@@ -125,13 +236,12 @@ public class UserControlls extends SimpleConsolePrinter implements HasControllsF
         }
     }
     
-    private int processIncrementMode(int padIndex, PadConfigurationManager.PadConfig config) {
+    private void processIncrementMode(int padIndex, PadConfigurationManager.PadConfig config) {
         int stepSize = (int) config.stepSize;
         incrementValues[padIndex] += stepSize;
         if (incrementValues[padIndex] > config.max) {
             incrementValues[padIndex] = config.min;
         }
-        return incrementValues[padIndex];
     }
     
     private void updateHardwareFeedback(int padIndex, PadConfigurationManager.PadConfig config, int outputValue) {
@@ -142,35 +252,40 @@ public class UserControlls extends SimpleConsolePrinter implements HasControllsF
         
         switch (config.mode) {
             case TOGGLE:
-                // LED shows toggle state: RED when ON, GREEN when OFF
+                // LED shows toggle state using Page constants
                 ledState = toggleStates[padIndex] ? 
-                    new LedStates(LedColor.RED, LedLight.ON) :
-                    new LedStates(LedColor.GREEN, LedLight.ON);
+                    Page.USER_LED_STATES.TOGGLE_ON :
+                    Page.USER_LED_STATES.TOGGLE_OFF;
                 break;
                 
             case MOMENTARY:
-                // LED shows momentary state: RED when pressed, GREEN when released
+                // LED shows momentary state using Page constants
                 ledState = (outputValue > config.min) ? 
-                    new LedStates(LedColor.RED, LedLight.ON) :
-                    new LedStates(LedColor.GREEN, LedLight.ON);
+                    Page.USER_LED_STATES.MOMENTARY_PRESSED :
+                    Page.USER_LED_STATES.MOMENTARY_RELEASED;
                 break;
                 
             case PRESSURE:
-                // LED shows pressure state: RED when pressed, GREEN when released
+                // LED shows pressure state using Page constants
                 ledState = (outputValue > config.min) ? 
-                    new LedStates(LedColor.RED, LedLight.ON) :
-                    new LedStates(LedColor.GREEN, LedLight.ON);
+                    Page.USER_LED_STATES.PRESSURE_PRESSED :
+                    Page.USER_LED_STATES.PRESSURE_RELEASED;
                 break;
                 
             case INCREMENT:
-                // LED shows RED when max is reached, otherwise GREEN
-                ledState = (incrementValues[padIndex] >= config.max) ? 
-                    new LedStates(LedColor.RED, LedLight.ON) : 
-                    new LedStates(LedColor.GREEN, LedLight.ON);
+                // Enhanced LED logic using Page constants
+                int currentValue = incrementValues[padIndex];
+                if (currentValue <= config.min) {
+                    ledState = Page.USER_LED_STATES.INCREMENT_MIN;
+                } else if (currentValue >= config.max) {
+                    ledState = Page.USER_LED_STATES.INCREMENT_MAX;
+                } else {
+                    ledState = Page.USER_LED_STATES.INCREMENT_MID;
+                }
                 break;
                 
             default:
-                ledState = new LedStates(LedColor.GREEN, LedLight.OFF);
+                ledState = Page.USER_LED_STATES.DISABLED;
                 break;
         }
         

@@ -30,7 +30,7 @@ public class ApiControllerToHost extends SimpleConsolePrinter{
                 .getControl(index);
         parameter.set(value, USER_CONTROL_PARAMETER_RESOLUTION);
 
-        // update LEDs not for pedal which is user controll 11
+        // update LEDs only for pad UserControls (0-9), not for long press (10-19) or expression pedal (20)
         if (index < 10) {
             api.getSoftstepController().getSoftstepHardware().drawFastAt( index, value > 0
                             ? Page.USER_LED_STATES.FOOT_ON

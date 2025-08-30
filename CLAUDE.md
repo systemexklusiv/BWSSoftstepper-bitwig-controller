@@ -99,15 +99,20 @@ int[] buttonAddresses = {44, 52, 60, 68, 76, 40, 48, 56, 64, 72};
   - Mode selection (radio buttons)
   - Min Value (0-127 range)
   - Max Value (0-127 range) 
-  - Step Size (pressure multiplier/increment step)
+  - Step Size (context-sensitive):
+    - **INCREMENT mode**: Integer 1-64 (how much each stomp increments)
+    - **PRESSURE mode**: Double 0.1-10.0 (pressure sensitivity multiplier)
   - Inverted checkbox (inverts output values)
 - **Project Persistence**: Settings saved with Bitwig projects automatically
 
-### **Hardware LED Feedback Logic:**
-- **Toggle Mode**: Green=ON state, Red=OFF state
-- **Momentary Mode**: Green=pressed, Red=released
-- **Pressure Mode**: Green when value > min, Red when value = min
-- **Increment Mode**: RED when max value reached, GREEN otherwise
+### **Hardware LED Feedback Logic (Enhanced):**
+- **Toggle Mode**: RED=ON state, YELLOW (orange)=OFF state ✨
+- **Momentary Mode**: RED=pressed, GREEN=released
+- **Pressure Mode**: RED when value > min, GREEN when value = min
+- **Increment Mode**: GREEN=at min, YELLOW (orange)=in between, RED=at max/wraparound ✨
+- **Long Press**: Brief YELLOW flash when triggered
+- **Centralized Constants**: All LED states defined in `Page.USER_LED_STATES` for consistency
+- **Dynamic Assignment**: LEDs dynamically update based on pad mode and current state
 - **No Software Feedback**: USER controls don't send updates back from software interactions
 
 ### **Technical Architecture:**
@@ -209,9 +214,54 @@ case TOGGLE:
 - **Bitwig Integration**: Controls should work properly with mapped parameters
 - **Index Consistency**: "U5" should correspond to "UserControl4" (0-based indexing)
 
+## **NEW FEATURE: Separate UserControls for Long Press (IMPLEMENTED)**
+
+### **UserControl Architecture:**
+```
+UserControl 0-9:   Normal pad operations (Pad 0-9)
+UserControl 10-19: Long press operations (Pad 0-9 long press) 
+UserControl 20:    Expression pedal (reserved for future)
+Total: 21 UserControls
+```
+
+### **Long Press Configuration:**
+- **Per-Pad Enable**: "Long Press Enabled" checkbox per pad in Bitwig preferences
+- **Per-Pad Value**: "Long Press Value" field (0-127) - no range/inversion scaling
+- **Separate Mapping**: Each long press maps to its own UserControl (pad + 10)
+- **No Conflicts**: Long press and normal operation are completely independent
+- **Works with All Modes**: Pressure, momentary, toggle, and increment all work perfectly
+
+### **Use Cases:**
+```
+Example 1 - Filter Cutoff with Reset:
+- Pad 0 Normal (UserControl0): Pressure mode 0-127 → Filter Cutoff
+- Pad 0 Long Press (UserControl10): Value 64 → Reset to middle
+
+Example 2 - Volume with Bypass:
+- Pad 1 Normal (UserControl1): Toggle mode → Volume On/Off  
+- Pad 1 Long Press (UserControl11): Value 0 → Instant Mute
+
+Example 3 - Multiple Effect Controls:
+- Pad 2 Normal (UserControl2): Pressure mode → Effect Send Amount
+- Pad 2 Long Press (UserControl12): Value 0 → Effect Bypass
+```
+
+### **Bitwig Integration:**
+- **Mapping Panel**: Shows "UserControl0-9" for pads, "UserControl10-19" for long press
+- **Independent Mapping**: Each can map to different software parameters  
+- **1-to-Many Support**: Each UserControl supports multiple parameter mappings
+- **Project Persistence**: All mappings save with project files
+
+### **Implementation Details:**
+- **Preference UI**: "Long Press Enabled" checkbox + "Long Press Value" field per pad
+- **Priority Processing**: Long press actions processed before normal pad operations
+- **Hardware Feedback**: Brief yellow FLASH, then returns to normal LED state
+- **No Timer Complexity**: Separate UserControls eliminate data conflicts
+- **Debug Logging**: Shows long press triggers with target UserControl index
+
 ### **Next Session Tasks:**
-1. Test and verify UserControl mapping works correctly
-2. Complete PERF page implementation (mixed CLIP/USER functionality)
+1. Test and verify long press functionality with different pad modes
+2. Complete PERF page implementation (mixed CLIP/USER functionality)  
 3. Verify all pad modes work with Bitwig parameter mapping
 
 ## Reference

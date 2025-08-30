@@ -73,8 +73,32 @@ public enum Page {
         public static final LedStates UNARMED = new LedStates(LedColor.GREEN, LedLight.ON);
     }
     public static class USER_LED_STATES {
+        // Legacy constants (kept for compatibility)
         public static final LedStates FOOT_ON = new LedStates(LedColor.RED, LedLight.ON);
         public static final LedStates FOOT_OFF = new LedStates(LedColor.GREEN, LedLight.ON);
+        
+        // Enhanced mode-specific LED states
+        
+        // TOGGLE Mode
+        public static final LedStates TOGGLE_OFF = new LedStates(LedColor.YELLOW, LedLight.ON);  // Orange when OFF
+        public static final LedStates TOGGLE_ON = new LedStates(LedColor.RED, LedLight.ON);     // Red when ON
+        
+        // INCREMENT Mode  
+        public static final LedStates INCREMENT_MIN = new LedStates(LedColor.GREEN, LedLight.ON);   // Green at minimum
+        public static final LedStates INCREMENT_MID = new LedStates(LedColor.YELLOW, LedLight.ON);  // Orange in between
+        public static final LedStates INCREMENT_MAX = new LedStates(LedColor.RED, LedLight.ON);     // Red at maximum/wraparound
+        
+        // MOMENTARY Mode
+        public static final LedStates MOMENTARY_RELEASED = new LedStates(LedColor.GREEN, LedLight.ON);  // Green when released
+        public static final LedStates MOMENTARY_PRESSED = new LedStates(LedColor.RED, LedLight.ON);    // Red when pressed
+        
+        // PRESSURE Mode
+        public static final LedStates PRESSURE_RELEASED = new LedStates(LedColor.GREEN, LedLight.ON);  // Green when released
+        public static final LedStates PRESSURE_PRESSED = new LedStates(LedColor.RED, LedLight.ON);    // Red when pressed
+        
+        // Special States
+        public static final LedStates LONG_PRESS_FLASH = new LedStates(LedColor.YELLOW, LedLight.FLASH);  // Yellow flash for long press
+        public static final LedStates DISABLED = new LedStates(LedColor.GREEN, LedLight.OFF);           // Off state
     }
 
     public static class PAD_INDICES {
@@ -82,8 +106,8 @@ public enum Page {
         public static final int ARM_PAD = 6;
         public static final int NAV_LEFT = 7;
         public static final int NAV_RIGHT = 8;
-        public static final int NAV_UP = 4;
-        public static final int NAV_DOWN = 9;
+        public static final int NAV_UP = 9;      // Fixed: Top right pad goes UP
+        public static final int NAV_DOWN = 4;    // Fixed: Bottom right pad goes DOWN
     }
 
 

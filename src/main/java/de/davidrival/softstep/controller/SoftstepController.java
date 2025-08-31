@@ -19,9 +19,10 @@ import java.util.stream.Collectors;
 @Setter
 public class SoftstepController extends SimpleConsolePrinter {
 
-    public static final int USER_CONTROL_INDEX_FOR_PEDAL = 10;
-    public static final int PEDAL_DATA1 = 50;
-    public static final double PEDAL_DATA2_MULTI = 1.95;
+    // Expression pedal disabled to avoid UserControl conflicts with long press (10-19)
+    // public static final int USER_CONTROL_INDEX_FOR_PEDAL = 10;
+    // public static final int PEDAL_DATA1 = 50;
+    // public static final double PEDAL_DATA2_MULTI = 1.95;
 
     private SoftstepHardware softstepHardware;
 
@@ -74,6 +75,8 @@ public class SoftstepController extends SimpleConsolePrinter {
         triggerBitwigIfControlsUsed(controls, msg);
     }
 
+    // Expression pedal method disabled to avoid UserControl conflicts
+    /*
     private boolean checkPedal(ShortMidiMessage msg) {
         if (msg.getStatusByte() == 176
         && msg.getData1() == PEDAL_DATA1){
@@ -86,6 +89,7 @@ public class SoftstepController extends SimpleConsolePrinter {
         }
         return false;
     }
+    */
 
     private void triggerBitwigIfControlsUsed(Controls controls, ShortMidiMessage msg) {
         List<Softstep1Pad> pushedDownPads = controls.getPads()

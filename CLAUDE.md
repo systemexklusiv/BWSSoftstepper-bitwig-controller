@@ -109,7 +109,7 @@ int[] buttonAddresses = {44, 52, 60, 68, 76, 40, 48, 56, 64, 72};
 - **Toggle Mode**: RED=ON state, YELLOW (orange)=OFF state ✨
 - **Momentary Mode**: RED=pressed, GREEN=released
 - **Pressure Mode**: RED when value > min, GREEN when value = min
-- **Increment Mode**: GREEN=at min, YELLOW (orange)=in between, RED=at max/wraparound ✨
+- **Increment Mode**: GREEN=at min, YELLOW (orange)=safe to increment, RED=next step will wraparound ✨
 - **Long Press**: Brief YELLOW flash when triggered
 - **Centralized Constants**: All LED states defined in `Page.USER_LED_STATES` for consistency
 - **Dynamic Assignment**: LEDs dynamically update based on pad mode and current state
@@ -259,10 +259,265 @@ Example 3 - Multiple Effect Controls:
 - **No Timer Complexity**: Separate UserControls eliminate data conflicts
 - **Debug Logging**: Shows long press triggers with target UserControl index
 
+## **NEW FEATURE: Studio I/O Panel Long Press Testing (IMPLEMENTED)**
+
+### **Studio I/O Panel Integration:**
+- **Location**: Appears at top of Bitwig's main window when controller is active
+- **Purpose**: Easy mapping of long press UserControls without hardware gestures
+- **UI Elements**: 10 "Assign Longpress 0-9" trigger buttons (one per pad)
+- **Persistent**: Always visible when controller is connected
+
+### **How It Works:**
+```
+1. User clicks "Assign Longpress N" button in Studio I/O Panel
+2. Sends 15 rapid signals (50ms apart) to long press UserControl (UserControl10-19)
+3. Bitwig's mapping mode detects the continuous signal stream
+4. User can now map this UserControl to any Bitwig parameter
+5. Real hardware long press gestures also trigger the same UserControl
+```
+
+### **Benefits:**
+✅ **No Hardware Required**: Map long press functions without physical gestures  
+✅ **No Conflicts**: Test triggers don't interfere with normal pad operation  
+✅ **Instant Access**: Always visible in Studio I/O Panel at top of main window  
+✅ **Clear Feedback**: Popup notifications show progress and completion  
+✅ **Configuration Aware**: Only works if long press is enabled for that pad  
+✅ **Mapping Detection**: Signal burst ensures Bitwig recognizes UserControls for mapping  
+
+### **Technical Implementation:**
+- **StudioIOPanelManager Class**: Separate class for Studio I/O Panel management
+- **DocumentState Integration**: Uses Bitwig's DocumentState API for persistent UI
+- **API Integration**: Leverages existing ApiManager for UserControl sending
+- **Configuration Integration**: Respects PadConfigurationManager settings
+
+### **User Workflow:**
+```
+1. Configure pad in Bitwig preferences (enable long press, set value)
+2. Click "Assign Longpress N" button in Studio I/O Panel
+3. Right-click Bitwig parameter → "Map to UserControl10-19"
+4. Hardware long press now controls the mapped parameter
+```
+
+## **CONFIGURABLE BURST SYSTEM FOR LONG PRESS (COMPLETED)**
+
+### **Implementation Summary:**
+✅ **Global Burst Settings**: User-configurable burst count (1-50) and delay (10-1000ms) in Bitwig preferences  
+✅ **Unified Burst Method**: Centralized burst logic in ApiControllerToHost with validation and callbacks  
+✅ **Hardware Integration**: Hardware long press now uses configurable burst sending  
+✅ **Studio I/O Panel Integration**: UI triggers use same global settings for consistency  
+✅ **Code Cleanup**: Removed duplicate burst logic, improved maintainability  
+
+### **Benefits:**
+- **Consistency**: Hardware and UI triggers behave identically
+- **User Control**: Configurable parameters for different mapping needs  
+- **Reliability**: Better UserControl mapping detection with consistent burst patterns
+- **Maintainability**: Single burst implementation reduces code duplication
+
+---
+
+## **TECHNICAL IMPLEMENTATION GUIDE: STUDIO I/O PANEL & PREFERENCES**
+
+### **Studio I/O Panel Implementation:**
+
+#### **1. Basic Setup (StudioIOPanelManager.java):**
+```java
+// Use DocumentState API for persistent UI controls
+private final DocumentState documentState;
+private final SettableEnumValue[] longPressTestButtons;
+
+// In constructor:
+this.documentState = host.getDocumentState();
+
+// Create controls that appear in Studio I/O Panel
+longPressTestButtons[i] = documentState.getEnumSetting(
+    "Assign Longpress " + padIndex,     // Control name (appears as button)
+    "Pad " + padIndex,                  // Category name  
+    new String[]{IDLE_VALUE, TRIGGER_VALUE},  // Options (must have 2+)
+    IDLE_VALUE                          // Default value
+);
+```
+
+#### **2. Observer Pattern with Initialization Safety:**
+```java
+private final boolean[] initializationComplete;
+
+// Prevent startup triggers
+longPressTestButtons[i].addValueObserver(value -> {
+    if (TRIGGER_VALUE.equals(value) && initializationComplete[padIndex]) {
+        triggerLongPressUserControl(padIndex);
+        
+        // Auto-reset to idle after trigger
+        new Timer().schedule(new TimerTask() {
+            public void run() {
+                longPressTestButtons[padIndex].set(IDLE_VALUE);
+            }
+        }, 100);
+    }
+});
+
+// Mark as ready after delay (prevents startup bursts)
+new Timer().schedule(new TimerTask() {
+    public void run() {
+        initializationComplete[padIndex] = true;
+    }
+}, 1000);
+```
+
+#### **3. Signal Burst for Mapping Detection:**
+```java
+// Use centralized burst method with global settings
+apiManager.getApiToHost().sendUserControlBurst(
+    userControlIndex, 
+    value, 
+    padConfigManager.getBurstCount(),
+    padConfigManager.getBurstDelayMs(),
+    "Studio I/O Panel Pad " + padIndex
+);
+```
+
+### **Preferences Implementation (PadConfigurationManager.java):**
+
+#### **1. String-Based Settings (Critical for Value Control):**
+```java
+// NEVER use SettableRangedValue - it normalizes to 0.0-1.0!
+// Always use SettableStringValue for precise integer control
+this.padMinSettings = new SettableStringValue[NUM_PADS];
+this.padMaxSettings = new SettableStringValue[NUM_PADS];
+
+// Setup with validation
+padMinSettings[i] = preferences.getStringSetting(
+    "Min Value",        // Setting name
+    "Pad " + (i + 1),  // Category (use 1-based for user display)
+    8,                  // Max length
+    "0"                // Default value as string
+);
+```
+
+#### **2. Custom Parsing with User-Friendly Validation:**
+```java
+private int parseIntegerValue(String value, int min, int max, int defaultValue, String fieldName, int padIndex) {
+    try {
+        int parsedValue = Integer.parseInt(value.trim());
+        if (parsedValue < min || parsedValue > max) {
+            // Show popup notification for user feedback
+            host.showPopupNotification("Pad " + (padIndex + 1) + " " + fieldName + 
+                " must be between " + min + " and " + max + ". Using default: " + defaultValue);
+            return defaultValue;
+        }
+        return parsedValue;
+    } catch (NumberFormatException e) {
+        host.showPopupNotification("Pad " + (padIndex + 1) + " " + fieldName + 
+            " invalid format: '" + value + "'. Using default: " + defaultValue);
+        return defaultValue;
+    }
+}
+```
+
+#### **3. Observer Pattern for Live Updates:**
+```java
+// Mark all settings as interested
+padMinSettings[i].markInterested();
+
+// Add observers for live configuration updates
+padMinSettings[i].addValueObserver(value -> {
+    updateConfigFromSettings(padIndex);
+    host.println("Pad " + (padIndex + 1) + " min value changed to: '" + value + "'");
+});
+```
+
+#### **4. Global Settings Organization:**
+```java
+// Create separate category for global settings
+Preferences preferences = host.getPreferences();
+this.burstCountSetting = preferences.getStringSetting(
+    "Burst Count",                        // Setting name
+    "Global Long Press Settings",         // Category name (groups related settings)
+    8,                                   // Max length
+    "15"                                 // Default value
+);
+```
+
+### **CRITICAL PITFALLS & SOLUTIONS:**
+
+#### **🚨 PITFALL 1: SettableRangedValue Normalization**
+**Problem**: `SettableRangedValue.get()` always returns 0.0-1.0, regardless of configured range
+```java
+// WRONG - Always returns normalized values!
+SettableRangedValue rangeSetting = preferences.getRangedSetting("Value", "Pad", 0, 127, 0.1, "", 64);
+double value = rangeSetting.get(); // Always 0.0-1.0!
+```
+**Solution**: Use `SettableStringValue` with custom parsing
+```java
+// CORRECT - Full control over values
+SettableStringValue stringSetting = preferences.getStringSetting("Value", "Pad", 8, "64");
+int value = parseIntegerValue(stringSetting.get(), 0, 127, 64, "Value", padIndex);
+```
+
+#### **🚨 PITFALL 2: UserControl Mapping Detection**
+**Problem**: Single UserControl events show as "CC54 (Ch. 1)" instead of "UserControl" in mapping
+**Solution**: Send continuous/burst signals for proper detection
+```java
+// WRONG - Single event not recognized as UserControl
+apiManager.getApiToHost().setValueOfUserControl(index, value);
+
+// CORRECT - Burst pattern ensures UserControl recognition
+apiManager.getApiToHost().sendUserControlBurst(index, value, burstCount, delayMs, description);
+```
+
+#### **🚨 PITFALL 3: Enum Settings Red Warning**
+**Problem**: Single-option enum causes Bitwig console warnings
+```java
+// WRONG - Causes "enum settings should have at least two options" warning
+new String[]{"Trigger"}
+
+// CORRECT - Always provide 2+ options
+new String[]{"Ready", "Trigger"}
+```
+
+#### **🚨 PITFALL 4: Startup Observer Triggers**
+**Problem**: Observers fire during initialization, causing unwanted startup bursts
+**Solution**: Implement initialization delay mechanism
+```java
+private final boolean[] initializationComplete = new boolean[NUM_PADS];
+
+// In observer:
+if (TRIGGER_VALUE.equals(value) && initializationComplete[padIndex]) {
+    // Only trigger after initialization complete
+}
+
+// Set ready after delay
+new Timer().schedule(new TimerTask() {
+    public void run() { initializationComplete[padIndex] = true; }
+}, 1000);
+```
+
+#### **🚨 PITFALL 5: UserControl Index Conflicts**
+**Problem**: Expression pedal or other reserved UserControls cause index mismatches
+**Solution**: Carefully manage UserControl allocation
+```java
+// Document UserControl allocation clearly:
+// UserControl 0-9:   Normal pad operations
+// UserControl 10-19: Long press operations  
+// UserControl 20+:   Reserved for future expansion
+
+// Ensure total count matches usage
+public static final int AMOUNT_USER_CONTROLS = 20; // 10 pads + 10 longpress
+```
+
+### **BEST PRACTICES:**
+
+1. **Always Use String Settings** for numeric values requiring precision
+2. **Implement Custom Validation** with user-friendly error messages
+3. **Use Burst Patterns** for reliable UserControl mapping detection
+4. **Document UserControl Allocation** to prevent index conflicts
+5. **Implement Initialization Delays** to prevent startup side effects
+6. **Group Related Settings** using category names for better UX
+7. **Provide Real-time Feedback** through console logging and popup notifications
+
 ### **Next Session Tasks:**
-1. Test and verify long press functionality with different pad modes
-2. Complete PERF page implementation (mixed CLIP/USER functionality)  
-3. Verify all pad modes work with Bitwig parameter mapping
+1. Complete PERF page implementation (mixed CLIP/USER functionality)  
+2. Verify all pad modes work with Bitwig parameter mapping
+3. Test burst settings with different hardware scenarios
 
 ## Reference
 - Original JS implementation: https://github.com/ngradwohl/bitwig_scripts/tree/master/Controller%20Scripts/softstep

@@ -9,6 +9,7 @@ import de.davidrival.softstep.controller.ControllerPages;
 import de.davidrival.softstep.controller.Page;
 import de.davidrival.softstep.controller.PadConfigurationManager;
 import de.davidrival.softstep.controller.SoftstepController;
+import de.davidrival.softstep.controller.StudioIOPanelManager;
 import de.davidrival.softstep.hardware.SoftstepHardware;
 
 public class SoftstepperExtension extends ControllerExtension
@@ -20,6 +21,7 @@ public class SoftstepperExtension extends ControllerExtension
 
    SoftstepController softstepController;
    PadConfigurationManager padConfigurationManager;
+   StudioIOPanelManager studioIOPanelManager;
 
 
    protected SoftstepperExtension(final SoftstepperExtensionDefinition definition, final ControllerHost host)
@@ -50,10 +52,14 @@ public class SoftstepperExtension extends ControllerExtension
               , padConfigurationManager
       );
 
+      // Initialize Studio I/O Panel Manager after SoftstepController (which creates ApiManager)
+      studioIOPanelManager = new StudioIOPanelManager(host, softstepController.getApiManager(), padConfigurationManager);
+
       softstepController.display();
 
       host.showPopupNotification("BWSSoftstepper Native Initialized");
       getHost().println("BWSSoftstepper Native Initialized!");
+      getHost().println(studioIOPanelManager.getSetupInfo());
    }
 
 

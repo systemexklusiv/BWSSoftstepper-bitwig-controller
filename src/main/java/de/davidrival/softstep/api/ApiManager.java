@@ -15,7 +15,7 @@ import static de.davidrival.softstep.controller.Page.CLIP_LED_STATES.OFF;
 @Setter
 public class ApiManager {
 
-    public static final int AMOUNT_USER_CONTROLS = 21; // 10 pads + 10 longpress + 1 expression pedal
+    public static final int AMOUNT_USER_CONTROLS = 20; // 10 pads + 10 longpress (expression pedal disabled)
     public static final int NUM_TRACKS = 1;
     public static final int NUM_SENDS = 0;
     public static final int NUM_SCENES = 4;

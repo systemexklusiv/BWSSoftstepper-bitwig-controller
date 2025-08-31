@@ -51,8 +51,18 @@ public class UserControlls extends SimpleConsolePrinter implements HasControllsF
                 break;
                 
             case INCREMENT:
-                // INCREMENT starts at min value, so show INCREMENT_MIN state
-                initialLedState = Page.USER_LED_STATES.INCREMENT_MIN;
+                // INCREMENT starts at min value, check if next step would wrap
+                int currentValue = incrementValues[padIndex];  // Should be config.min
+                int stepSize = (int) config.stepSize;
+                int nextValue = currentValue + stepSize;
+                
+                if (currentValue <= config.min) {
+                    initialLedState = Page.USER_LED_STATES.INCREMENT_MIN;
+                } else if (nextValue > config.max) {
+                    initialLedState = Page.USER_LED_STATES.INCREMENT_MAX;  // Next will wrap
+                } else {
+                    initialLedState = Page.USER_LED_STATES.INCREMENT_MID;  // Safe to increment
+                }
                 break;
                 
             case MOMENTARY:
@@ -118,15 +128,24 @@ public class UserControlls extends SimpleConsolePrinter implements HasControllsF
         
         // Send to separate UserControl: pad 0-9 use UserControl 10-19 for long press
         int longPressUserControlIndex = padIndex + 10;
-        apiManager.getApiToHost().setValueOfUserControl(longPressUserControlIndex, longPressValue);
+        
+        // Use burst sending with global settings for consistent mapping behavior
+        String description = "Hardware Long Press Pad " + padIndex;
+        apiManager.getApiToHost().sendUserControlBurst(
+            longPressUserControlIndex, 
+            longPressValue, 
+            padConfigManager.getBurstCount(), 
+            padConfigManager.getBurstDelayMs(),
+            description
+        );
         
         // Update hardware LED to show long press was triggered (brief flash)
         updateHardwareLongPressFeedback(padIndex);
         
         // Debug logging
         double normalizedDisplay = longPressValue / 127.0;
-        p(String.format("LONG PRESS Pad %d → UserControl%d: sent value %d (%.3f normalized, configured: %d)", 
-            padIndex, longPressUserControlIndex, longPressValue, normalizedDisplay, config.longPressValue));
+        p(String.format("LONG PRESS Pad %d → UserControl%d: burst %d signals (value %d, %.3f normalized, configured: %d)", 
+            padIndex, longPressUserControlIndex, padConfigManager.getBurstCount(), longPressValue, normalizedDisplay, config.longPressValue));
     }
     
     private void updateHardwareLongPressFeedback(int padIndex) {
@@ -273,13 +292,19 @@ public class UserControlls extends SimpleConsolePrinter implements HasControllsF
                 break;
                 
             case INCREMENT:
-                // Enhanced LED logic using Page constants
+                // Enhanced LED logic: RED when next step will wrap around
                 int currentValue = incrementValues[padIndex];
+                int stepSize = (int) config.stepSize;
+                int nextValue = currentValue + stepSize;
+                
                 if (currentValue <= config.min) {
+                    // At minimum value
                     ledState = Page.USER_LED_STATES.INCREMENT_MIN;
-                } else if (currentValue >= config.max) {
+                } else if (nextValue > config.max) {
+                    // Next increment will wrap to min - show warning RED
                     ledState = Page.USER_LED_STATES.INCREMENT_MAX;
                 } else {
+                    // Somewhere in between, can increment safely
                     ledState = Page.USER_LED_STATES.INCREMENT_MID;
                 }
                 break;

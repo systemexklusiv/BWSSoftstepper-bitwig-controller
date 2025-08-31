@@ -3,6 +3,10 @@ package de.davidrival.softstep.api;
 import com.bitwig.extension.controller.api.Parameter;
 import de.davidrival.softstep.controller.Page;
 
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import static de.davidrival.softstep.api.ApiManager.USER_CONTROL_PARAMETER_RESOLUTION;
 
 public class ApiControllerToHost extends SimpleConsolePrinter{
@@ -30,7 +34,7 @@ public class ApiControllerToHost extends SimpleConsolePrinter{
                 .getControl(index);
         parameter.set(value, USER_CONTROL_PARAMETER_RESOLUTION);
 
-        // update LEDs only for pad UserControls (0-9), not for long press (10-19) or expression pedal (20)
+        // update LEDs only for pad UserControls (0-9), not for long press (10-19)
         if (index < 10) {
             api.getSoftstepController().getSoftstepHardware().drawFastAt( index, value > 0
                             ? Page.USER_LED_STATES.FOOT_ON
@@ -79,5 +83,99 @@ public class ApiControllerToHost extends SimpleConsolePrinter{
         for (int i = 0; i < size; i++) {
             deleteSlotAt(i);
         }
+    }
+    
+    /**
+     * Sends repeated UserControl signals in a burst pattern for mapping detection.
+     * This method is used by both hardware long press and Studio I/O Panel triggers
+     * to ensure Bitwig recognizes the UserControl as a continuous control signal.
+     * 
+     * @param userControlIndex The UserControl index to send to (0-19)
+     * @param value The value to send (0-127) 
+     * @param burstCount Number of signals to send
+     * @param burstDelayMs Delay between signals in milliseconds
+     * @param description Description for logging and notifications (e.g., "Hardware Long Press Pad 0", "Studio I/O Panel Pad 3")
+     * @param onProgress Optional callback for progress updates (can be null)
+     * @param onComplete Optional callback when burst is complete (can be null)
+     */
+    public void sendUserControlBurst(int userControlIndex, int value, int burstCount, int burstDelayMs, 
+                                   String description, Runnable onProgress, Runnable onComplete) {
+        
+        // Validate parameters
+        if (userControlIndex < 0 || userControlIndex >= 20) {
+            api.getHost().println("ERROR: Invalid UserControl index: " + userControlIndex + " (must be 0-19)");
+            return;
+        }
+        if (burstCount <= 0 || burstCount > 50) {
+            api.getHost().println("ERROR: Invalid burst count: " + burstCount + " (must be 1-50)");
+            return;
+        }
+        if (burstDelayMs < 10 || burstDelayMs > 1000) {
+            api.getHost().println("ERROR: Invalid burst delay: " + burstDelayMs + "ms (must be 10-1000ms)");
+            return;
+        }
+        
+        // Show start notification  
+        api.getHost().showPopupNotification(String.format(
+            "%s → UserControl%d (sending %d signals...)", 
+            description, userControlIndex, burstCount
+        ));
+        
+        // Create timer for burst signals
+        Timer signalTimer = new Timer();
+        AtomicInteger signalsSent = new AtomicInteger(0);
+        
+        signalTimer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                int currentSignal = signalsSent.incrementAndGet();
+                
+                // Send the UserControl value
+                setValueOfUserControl(userControlIndex, value);
+                
+                // Progress callback
+                if (onProgress != null) {
+                    onProgress.run();
+                }
+                
+                // Debug output (reduce spam by only showing key signals)
+                if (currentSignal % 3 == 0 || currentSignal == 1 || currentSignal == burstCount) {
+                    api.getHost().println(String.format(
+                        "UserControlBurst: Signal %d/%d → UserControl%d (value: %d) [%s]",
+                        currentSignal, burstCount, userControlIndex, value, description
+                    ));
+                }
+                
+                // Stop after sending all signals
+                if (currentSignal >= burstCount) {
+                    this.cancel();
+                    signalTimer.cancel();
+                    
+                    // Completion callback
+                    if (onComplete != null) {
+                        onComplete.run();
+                    }
+                    
+                    // Final notification and logging
+                    api.getHost().showPopupNotification(String.format(
+                        "%s / UserControl%d Complete",
+                        description, userControlIndex
+                    ));
+                    
+                    api.getHost().println(String.format(
+                        "UserControlBurst: Completed for UserControl%d (%d signals sent) [%s]",
+                        userControlIndex, burstCount, description
+                    ));
+                }
+            }
+        }, 0, burstDelayMs); // Start immediately, repeat every delayMs
+    }
+    
+    /**
+     * Convenience method for simple burst sending without callbacks.
+     * Uses the reusable burst method with null callbacks.
+     */
+    public void sendUserControlBurst(int userControlIndex, int value, int burstCount, int burstDelayMs, String description) {
+        sendUserControlBurst(userControlIndex, value, burstCount, burstDelayMs, description, null, null);
     }
 }

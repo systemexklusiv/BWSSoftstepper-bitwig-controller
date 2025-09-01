@@ -514,11 +514,123 @@ public static final int AMOUNT_USER_CONTROLS = 20; // 10 pads + 10 longpress
 6. **Group Related Settings** using category names for better UX
 7. **Provide Real-time Feedback** through console logging and popup notifications
 
+## **CRITICAL BUG: Studio I/O Panel Trigger Ineffective After Mapping**
+
+### **Problem Description:**
+- **Mapping Phase Works**: "Assign Longpress N" buttons successfully trigger burst signals for UserControl mapping
+- **Mapping Establishes**: Bitwig shows mapped connection (e.g., "UserControl/Control10 mapped to Track1 Volume")
+- **Post-Mapping Issue**: Same trigger button no longer affects the mapped parameter
+- **Console Evidence**: Burst signals are still being sent and logged correctly
+- **Parameter Unchanged**: Track volume (or other mapped parameter) doesn't respond to triggers
+
+### **Technical Analysis:**
+```
+✅ Burst signal generation: Working (console confirms)
+✅ UserControl index calculation: Correct (UserControl10-19)
+✅ Value transmission: Working (apiManager.getApiToHost().sendUserControlBurst())
+❌ Parameter response: Bitwig mapped parameter doesn't change
+```
+
+### **Potential Root Causes:**
+1. **Burst vs Single Value Issue**: Mapping phase needs bursts, but parameter control might need single values
+2. **Value Range Mismatch**: Burst sends raw 0-127 values, but Bitwig expects normalized 0.0-1.0 values
+3. **UserControl State Confusion**: Bitwig might not recognize burst patterns as valid parameter changes
+4. **API Method Mismatch**: `sendUserControlBurst()` vs `setValueOfUserControl()` behavior differences
+
+### **Current Workaround:**
+- **"Trigger Once N" buttons**: These use `setValueOfUserControl()` instead of burst - test if these work for parameter control
+- **Hardware Long Press**: Test if actual hardware long press gestures work correctly after mapping
+
+### **Investigation Plan:**
+1. Test "Trigger Once N" buttons after mapping to see if single values work
+2. Compare burst method vs single value method effectiveness
+3. Check if hardware long press works correctly after Studio I/O mapping
+4. Investigate if value normalization is needed for parameter control
+
 ### **Next Session Tasks:**
-1. Complete PERF page implementation (mixed CLIP/USER functionality)  
-2. Verify all pad modes work with Bitwig parameter mapping
-3. Test burst settings with different hardware scenarios
+1. **PRIORITY**: Debug Studio I/O Panel trigger ineffectiveness after mapping
+2. Complete PERF page implementation (mixed CLIP/USER functionality)  
+3. Verify all pad modes work with Bitwig parameter mapping
+4. Test burst settings with different hardware scenarios
+
+## **STUDIO I/O PANEL RESEARCH & CAPABILITIES**
+
+### **Advanced UI Elements Available (DocumentState API)**
+
+#### **Core UI Element Types:**
+- **SettableEnumValue**: Dropdowns/button groups for mode selection
+- **SettableBooleanValue**: Checkboxes/toggle buttons for on/off controls  
+- **SettableRangedValue**: Sliders/number fields with custom ranges and units
+- **SettableStringValue**: Text input fields with character limits
+- **SettableColorValue**: RGB color picker interface (API v5+)
+- **Signal**: Push buttons for one-time actions
+
+#### **Advanced Use Cases for SoftStep Controller:**
+
+**1. Virtual Hardware Interface**
+```java
+// Virtual faders replicating hardware functionality
+SettableRangedValue virtualPadValue = documentState.getNumberSetting(
+    "Virtual Pad " + i + " Value", "Live Control", 
+    0.0, 127.0, 1.0, "", 0.0);
+
+// Color coding to match hardware LED states
+SettableColorValue padColor = documentState.getColorSetting(
+    "Pad " + i + " Color", "Visual Feedback", Color.GREEN);
+```
+
+**2. Live Configuration Center**
+```java
+// Real-time pad mode switching without preferences
+SettableEnumValue liveMode = documentState.getEnumSetting(
+    "Live Pad " + i + " Mode", "Runtime Config",
+    new String[]{"Pressure", "Toggle", "Momentary", "Increment"}, 
+    "Pressure");
+```
+
+**3. Performance & Debug Interface**
+- Signal monitors showing MIDI I/O
+- State displays for toggle/increment values
+- Hardware calibration controls
+- Performance metrics (latency, message rates)
+
+#### **Potential SoftStep Panel Features:**
+1. **Virtual Pressure Faders**: Mouse control instead of foot pressure
+2. **LED State Simulator**: Visual representation of hardware LED states
+3. **Live Pad Configuration**: Change modes without going to preferences
+4. **Preset Switcher**: Quick switching between pad configurations
+5. **Performance Monitor**: Real-time display of pad values and states
+6. **Hardware Calibration**: Live adjustment of sensitivity and ranges
+
+#### **Best Practices Learned:**
+- **Initialization Safety**: Use delays to prevent startup triggers
+- **Auto-Reset Buttons**: Timer-based reset for trigger buttons
+- **Category Organization**: Group related controls logically
+- **Bidirectional Sync**: Keep UI and hardware/software in sync
+- **Value Validation**: Validate inputs with user-friendly error messages
+
+#### **Implementation Patterns:**
+```java
+// Initialization safety pattern
+private boolean initializationComplete = false;
+setting.addValueObserver(value -> {
+    if (initializationComplete) { /* handle change */ }
+});
+
+// Auto-reset trigger pattern
+button.addValueObserver(pressed -> {
+    if (pressed && initializationComplete) {
+        performAction();
+        host.scheduleTask(() -> button.set(false), 100);
+    }
+});
+```
 
 ## Reference
-- Original JS implementation: https://github.com/ngradwohl/bitwig_scripts/tree/master/Controller%20Scripts/softstep
-- SoftStep Manual: https://files.keithmcmillen.com/downloads/softstep/SoftStep_Manual_v2.01.pdf
+- **Original JS implementation**: https://github.com/ngradwohl/bitwig_scripts/tree/master/Controller%20Scripts/softstep
+- **SoftStep Manual**: https://files.keithmcmillen.com/downloads/softstep/SoftStep_Manual_v2.01.pdf
+- **DrivenByMoss Framework**: https://github.com/git-moss/DrivenByMoss (Advanced Studio I/O Panel examples)
+- **BitwigSnapshotManager**: OSC settings and snapshot management via Studio I/O Panel
+- **Push Controller Configuration**: Comprehensive hardware parameter control examples
+- **ISettingsUI Interface**: Abstraction layer for advanced UI element management
+- **Bitwig Controller API**: DocumentState vs Preferences for project-specific vs global settings

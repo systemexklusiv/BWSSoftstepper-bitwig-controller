@@ -33,11 +33,34 @@ public class ApiControllerToHost extends SimpleConsolePrinter{
         Parameter parameter = api.getUserControls()
                 .getControl(index);
         
+        // Use original method to maintain UserControl identity for mapping
+        parameter.set(value, USER_CONTROL_PARAMETER_RESOLUTION);
+
+        // update LEDs only for pad UserControls (0-9), not for long press (10-19)
+        if (index < 10) {
+            api.getSoftstepController().getSoftstepHardware().drawFastAt( index, value > 0
+                            ? Page.USER_LED_STATES.FOOT_ON
+                            : Page.USER_LED_STATES.FOOT_OFF);
+        }
+    }
+    
+    /**
+     * Sets UserControl value immediately, bypassing takeover mode completely.
+     * This method uses Parameter.setImmediately() which ignores the user's takeover mode settings
+     * and applies the value change immediately. Use this for parameter control after mapping,
+     * not for mapping detection itself.
+     * 
+     * @param index UserControl index (0-19)
+     * @param value Raw value (0-127) - will be normalized to 0.0-1.0 internally
+     */
+    public void setValueOfUserControlImmediately(int index, int value) {
+        Parameter parameter = api.getUserControls()
+                .getControl(index);
+                
         // Convert 0-127 value to normalized 0.0-1.0 range for setImmediately()
         double normalizedValue = Math.max(0.0, Math.min(1.0, value / 127.0));
         
-        // Use setImmediately() to bypass takeover mode - essential for foot controllers
-        // where precise crossover is nearly impossible to achieve
+        // Apply immediately - bypasses takeover mode completely
         parameter.setImmediately(normalizedValue);
 
         // update LEDs only for pad UserControls (0-9), not for long press (10-19)

@@ -32,14 +32,19 @@ public class ApiControllerToHost extends SimpleConsolePrinter{
     public void setValueOfUserControl(int index, int value) {
         Parameter parameter = api.getUserControls()
                 .getControl(index);
-        parameter.set(value, USER_CONTROL_PARAMETER_RESOLUTION);
+        
+        // Convert 0-127 value to normalized 0.0-1.0 range for setImmediately()
+        double normalizedValue = Math.max(0.0, Math.min(1.0, value / 127.0));
+        
+        // Use setImmediately() to bypass takeover mode - essential for foot controllers
+        // where precise crossover is nearly impossible to achieve
+        parameter.setImmediately(normalizedValue);
 
         // update LEDs only for pad UserControls (0-9), not for long press (10-19)
         if (index < 10) {
             api.getSoftstepController().getSoftstepHardware().drawFastAt( index, value > 0
                             ? Page.USER_LED_STATES.FOOT_ON
                             : Page.USER_LED_STATES.FOOT_OFF);
-
         }
     }
 
@@ -177,5 +182,92 @@ public class ApiControllerToHost extends SimpleConsolePrinter{
      */
     public void sendUserControlBurst(int userControlIndex, int value, int burstCount, int burstDelayMs, String description) {
         sendUserControlBurst(userControlIndex, value, burstCount, burstDelayMs, description, null, null);
+    }
+    
+    /**
+     * Sends ramped UserControl signals that simulate user interaction (like turning a knob).
+     * Instead of sending the same value repeatedly, this method ramps up to the target value
+     * to simulate how a user would gradually turn a control to the desired position.
+     * This should trigger parameter changes that static bursts might not.
+     * 
+     * @param userControlIndex The UserControl index to send to (0-19)
+     * @param targetValue The final target value (0-127)
+     * @param rampSteps Number of steps to ramp up (uses Global Long Press Settings burst count)
+     * @param burstDelayMs Delay between signals in milliseconds
+     * @param description Description for logging and notifications
+     */
+    public void sendUserControlRampedBurst(int userControlIndex, int targetValue, int rampSteps, int burstDelayMs, String description) {
+        // Validate parameters
+        if (userControlIndex < 0 || userControlIndex >= 20) {
+            api.getHost().println("ERROR: Invalid UserControl index: " + userControlIndex + " (must be 0-19)");
+            return;
+        }
+        if (rampSteps <= 0 || rampSteps > 50) {
+            api.getHost().println("ERROR: Invalid ramp steps: " + rampSteps + " (must be 1-50)");
+            return;
+        }
+        if (burstDelayMs < 10 || burstDelayMs > 1000) {
+            api.getHost().println("ERROR: Invalid burst delay: " + burstDelayMs + "ms (must be 10-1000ms)");
+            return;
+        }
+        
+        // Calculate ramp starting point
+        // Start from a lower value and ramp up to target (minimum 5 steps below target)
+        int startValue = Math.max(0, targetValue - Math.max(5, rampSteps - 1));
+        int valueRange = targetValue - startValue;
+        
+        // Show start notification with ramp info
+        api.getHost().showPopupNotification(String.format(
+            "%s → UserControl%d (ramping %d→%d in %d steps)", 
+            description, userControlIndex, startValue, targetValue, rampSteps
+        ));
+        
+        // Create timer for ramped signals
+        Timer rampTimer = new Timer();
+        AtomicInteger stepsSent = new AtomicInteger(0);
+        
+        rampTimer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                int currentStep = stepsSent.incrementAndGet();
+                
+                // Calculate current value based on ramp progress
+                int currentValue;
+                if (currentStep >= rampSteps) {
+                    // Ensure final step is exactly the target value
+                    currentValue = targetValue;
+                } else {
+                    // Linear interpolation from startValue to targetValue
+                    double progress = (double) currentStep / rampSteps;
+                    currentValue = (int) Math.round(startValue + (valueRange * progress));
+                }
+                
+                // Send the ramped UserControl value
+                setValueOfUserControl(userControlIndex, currentValue);
+                
+                // Debug output
+                api.getHost().println(String.format(
+                    "UserControlRamp: Step %d/%d → UserControl%d (value: %d) [%s]",
+                    currentStep, rampSteps, userControlIndex, currentValue, description
+                ));
+                
+                // Stop after sending all steps
+                if (currentStep >= rampSteps) {
+                    this.cancel();
+                    rampTimer.cancel();
+                    
+                    // Final notification and logging
+                    api.getHost().showPopupNotification(String.format(
+                        "%s / UserControl%d Ramp Complete (final: %d)",
+                        description, userControlIndex, targetValue
+                    ));
+                    
+                    api.getHost().println(String.format(
+                        "UserControlRamp: Completed for UserControl%d (%d steps, final value: %d) [%s]",
+                        userControlIndex, rampSteps, targetValue, description
+                    ));
+                }
+            }
+        }, 0, burstDelayMs); // Start immediately, repeat every delayMs
     }
 }

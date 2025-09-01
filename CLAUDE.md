@@ -547,11 +547,118 @@ public static final int AMOUNT_USER_CONTROLS = 20; // 10 pads + 10 longpress
 3. Check if hardware long press works correctly after Studio I/O mapping
 4. Investigate if value normalization is needed for parameter control
 
+### **SOLUTION ATTEMPT: Ramped User Interaction Simulation**
+
+**Implementation Date**: Current Session
+**Hypothesis**: Bitwig expects **value changes** rather than **repeated identical values** for parameter updates
+
+#### **New API Method Added:**
+```java
+// ApiControllerToHost.sendUserControlRampedBurst()
+// Simulates turning a knob by sending gradually increasing values
+// Example: For target value 33 with 5 ramp steps → sends 29,30,31,32,33
+```
+
+#### **New Studio I/O Panel Button:**
+- **"Ramp Test N" buttons** - Third button per pad for ramped value testing
+- Uses same configuration (long press enabled, target value, global burst settings)
+- Sends ramped sequence instead of repeated identical values
+
+#### **Technical Implementation:**
+```java
+// Calculates starting value (minimum 5 steps below target)
+int startValue = Math.max(0, targetValue - Math.max(5, rampSteps - 1));
+
+// Linear interpolation for smooth progression
+double progress = (double) currentStep / rampSteps;
+int currentValue = startValue + (valueRange * progress);
+```
+
+#### **Studio I/O Panel Layout (Updated):**
+Each pad now has **3 test buttons**:
+1. **"Assign Longpress N"** - Static burst for mapping detection (unchanged)
+2. **"Trigger Once N"** - Single value for basic testing
+3. **"Ramp Test N"** - Ramped values simulating user interaction ✨ **NEW**
+
+#### **Expected Behavior:**
+1. Map long press using "Assign Longpress" (existing functionality)
+2. Test parameter control using "Ramp Test" button
+3. Ramped values should trigger mapped parameter changes successfully
+
+#### **Files Modified:**
+- `ApiControllerToHost.java` - Added `sendUserControlRampedBurst()` method
+- `StudioIOPanelManager.java` - Added ramp test buttons and `triggerRampedUserControl()` method
+
+#### **Testing Status:**
+✅ **TESTED** - Ramping works but revealed deeper issue
+
+#### **CRITICAL DISCOVERY: Takeover Mode Behavior**
+
+**Date**: Current Session  
+**Finding**: UserControls exhibit takeover mode behavior when mapped to Bitwig parameters
+
+**Evidence**:
+1. **Fader at Max (127)** + Ramp Test to value 11 → **NO EFFECT** (values 0-11 never cross 127)
+2. **Fader at Min (0)** + Ramp Test to value 11 → **WORKS** (values cross 0 and continue upward)  
+3. **Fader at 99** + Target 127 → **WORKS** (values cross 99 and continue to 127)
+
+**Log Analysis**:
+```
+Pad 0 Long Press Value: 11, Burst Count: 30
+Ramp sequence: 0→1→1→1→2→2→3→3→3→4→4→4→5→5→6→6→6→7→7→7→8→8→8→9→9→10→10→10→11→11
+Result: Only works when ramp crosses current fader position
+```
+
+**Root Cause**: 
+- **Takeover Mode Active**: UserControls require value crossover before taking control
+- **Parameter Protection**: Prevents accidental jumps by requiring smooth transitions
+- **Crossover Threshold**: Values only affect parameter after crossing current position
+
+#### **SOLUTION RESEARCH: Disable Takeover Mode**
+
+**Potential API Solutions**:
+1. **RemoteControl.setIndication(true)** - May disable takeover for specific controls
+2. **Parameter.setIndication(false)** - Could force immediate control without takeover
+3. **UserControl specific settings** - Check if UserControls have takeover disable options
+4. **ControllerHost preferences** - Global takeover mode settings
+
+**Alternative Approaches**:
+1. **Smart Ramping**: Always start ramp from current parameter value (query before sending)
+2. **Crossover Ramp**: Send values from 0→127 to guarantee crossover regardless of current position
+3. **Bidirectional Ramp**: Ramp both directions to ensure crossover (current±range)
+
+**SOLUTION FOUND: DrivenByMoss Research Results**
+
+**Key Findings from DrivenByMoss Framework:**
+
+1. **Parameter.setImmediately()**: Bypasses takeover mode completely
+   ```java
+   parameter.setImmediately(normalizedValue); // 0.0-1.0 range
+   ```
+
+2. **AbsoluteHardwareControl.disableTakeOver()**: For hardware controls
+   ```java
+   // Used by APC, MCU, Maschine JAM controllers
+   hardwareControl.disableTakeOver();
+   ```
+
+3. **Usage Patterns in DrivenByMoss:**
+   - **Launchpad UserView**: `parameter.setValueImmediatly(value)` 
+   - **APC Controllers**: Disable takeover for LED feedback knobs
+   - **MCU Controllers**: Disable takeover for motor faders
+   - **Initialization Pattern**: Set initial values to prevent catch mode
+
+**Exact Solution for SoftStep Controller:**
+- Replace `setValueOfUserControl()` with `parameter.setImmediately()`
+- Convert 0-127 values to normalized 0.0-1.0 range
+- Apply to both single shots and ramped bursts
+
 ### **Next Session Tasks:**
-1. **PRIORITY**: Debug Studio I/O Panel trigger ineffectiveness after mapping
-2. Complete PERF page implementation (mixed CLIP/USER functionality)  
-3. Verify all pad modes work with Bitwig parameter mapping
-4. Test burst settings with different hardware scenarios
+1. **PRIORITY**: Research and implement takeover mode disable for UserControls
+2. Test API methods: setIndication(), Parameter options, RemoteControl alternatives
+3. Implement smart crossover ramping as fallback solution
+4. Complete PERF page implementation (mixed CLIP/USER functionality)  
+5. Verify all pad modes work with Bitwig parameter mapping after takeover fix
 
 ## **STUDIO I/O PANEL RESEARCH & CAPABILITIES**
 

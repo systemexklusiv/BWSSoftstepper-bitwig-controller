@@ -19,11 +19,7 @@ public class StudioIOPanelManager {
     private final PadConfigurationManager padConfigManager;
     private final DocumentState documentState;
     private final SettableEnumValue[] longPressTestButtons;
-    private final SettableEnumValue[] singleShotTestButtons;
-    private final SettableEnumValue[] rampedTestButtons;
     private final boolean[] initializationComplete;
-    private final boolean[] singleShotInitializationComplete;
-    private final boolean[] rampedInitializationComplete;
     
     public StudioIOPanelManager(ControllerHost host, ApiManager apiManager, PadConfigurationManager padConfigManager) {
         this.host = host;
@@ -31,11 +27,7 @@ public class StudioIOPanelManager {
         this.padConfigManager = padConfigManager;
         this.documentState = host.getDocumentState();
         this.longPressTestButtons = new SettableEnumValue[NUM_PADS];
-        this.singleShotTestButtons = new SettableEnumValue[NUM_PADS];
-        this.rampedTestButtons = new SettableEnumValue[NUM_PADS];
         this.initializationComplete = new boolean[NUM_PADS];
-        this.singleShotInitializationComplete = new boolean[NUM_PADS];
-        this.rampedInitializationComplete = new boolean[NUM_PADS];
         
         createStudioIOPanelControls();
         setupObservers();
@@ -50,7 +42,7 @@ public class StudioIOPanelManager {
             final int padIndex = i;
             String padName = "Pad " + padIndex; // Use 0-based indexing for pad names
             
-            // Create burst trigger button for mapping (existing functionality)
+            // Create burst trigger button for mapping long press UserControls
             longPressTestButtons[i] = documentState.getEnumSetting(
                 "Assign Longpress " + padIndex, 
                 padName, 
@@ -58,38 +50,18 @@ public class StudioIOPanelManager {
                 IDLE_VALUE
             );
             
-            // Create single-shot trigger button for testing value changes
-            singleShotTestButtons[i] = documentState.getEnumSetting(
-                "Trigger Once " + padIndex,
-                padName,
-                new String[]{IDLE_VALUE, TRIGGER_VALUE},
-                IDLE_VALUE
-            );
-            
-            // Create ramped trigger button for simulating user interaction
-            rampedTestButtons[i] = documentState.getEnumSetting(
-                "Ramp Test " + padIndex,
-                padName,
-                new String[]{IDLE_VALUE, TRIGGER_VALUE},
-                IDLE_VALUE
-            );
-            
             // Mark as interested to receive updates
             longPressTestButtons[i].markInterested();
-            singleShotTestButtons[i].markInterested();
-            rampedTestButtons[i].markInterested();
             
             // Initialize as not ready yet (prevents startup triggering)
             initializationComplete[i] = false;
-            singleShotInitializationComplete[i] = false;
-            rampedInitializationComplete[i] = false;
         }
         
-        host.println("StudioIOPanelManager: Created " + NUM_PADS + " burst + " + NUM_PADS + " single-shot + " + NUM_PADS + " ramped test controls in Studio I/O Panel");
+        host.println("StudioIOPanelManager: Created " + NUM_PADS + " long press assignment controls in Studio I/O Panel");
     }
     
     /**
-     * Sets up observers to handle trigger button presses.
+     * Sets up observers to handle long press assignment button presses.
      */
     private void setupObservers() {
         for (int i = 0; i < NUM_PADS; i++) {
@@ -111,45 +83,11 @@ public class StudioIOPanelManager {
                 }
             });
             
-            // Add single-shot trigger observer
-            singleShotTestButtons[i].addValueObserver(value -> {
-                // Only trigger if initialization is complete (prevents startup bursts)
-                if (TRIGGER_VALUE.equals(value) && singleShotInitializationComplete[padIndex]) {
-                    triggerSingleShotUserControl(padIndex);
-                    
-                    // Reset back to "Ready" state after triggering
-                    new java.util.Timer().schedule(new java.util.TimerTask() {
-                        @Override
-                        public void run() {
-                            singleShotTestButtons[padIndex].set(IDLE_VALUE);
-                        }
-                    }, 100); // 100ms delay
-                }
-            });
-            
-            // Add ramped trigger observer
-            rampedTestButtons[i].addValueObserver(value -> {
-                // Only trigger if initialization is complete (prevents startup bursts)
-                if (TRIGGER_VALUE.equals(value) && rampedInitializationComplete[padIndex]) {
-                    triggerRampedUserControl(padIndex);
-                    
-                    // Reset back to "Ready" state after triggering
-                    new java.util.Timer().schedule(new java.util.TimerTask() {
-                        @Override
-                        public void run() {
-                            rampedTestButtons[padIndex].set(IDLE_VALUE);
-                        }
-                    }, 100); // 100ms delay
-                }
-            });
-            
             // Mark initialization as complete after a short delay
             new java.util.Timer().schedule(new java.util.TimerTask() {
                 @Override
                 public void run() {
                     initializationComplete[padIndex] = true;
-                    singleShotInitializationComplete[padIndex] = true;
-                    rampedInitializationComplete[padIndex] = true;
                 }
             }, 1000); // 1 second delay to ensure everything is properly initialized
         }
@@ -193,43 +131,6 @@ public class StudioIOPanelManager {
         // Debug logging
         host.println(String.format(
             "StudioIOPanelManager: Triggered long press burst for Pad %d → UserControl%d with value %d",
-            padIndex, longPressUserControlIndex, longPressValue
-        ));
-    }
-    
-    /**
-     * Triggers a single UserControl signal for testing value changes.
-     * This method sends only ONE signal (not a burst) to test if the mapping
-     * actually works for changing parameter values.
-     * 
-     * @param padIndex The pad index (0-9)
-     */
-    private void triggerSingleShotUserControl(int padIndex) {
-        PadConfigurationManager.PadConfig config = padConfigManager.getPadConfig(padIndex);
-        
-        // Only trigger if long press is enabled for this pad
-        if (!config.longPressEnabled) {
-            host.showPopupNotification("Pad " + padIndex + " long press is disabled");
-            return;
-        }
-        
-        // Calculate the long press UserControl index (pad + 10)
-        int longPressUserControlIndex = padIndex + 10;
-        
-        // Get the configured long press value (0-127 range)
-        int longPressValue = Math.max(0, Math.min(127, config.longPressValue));
-        
-        // Send SINGLE signal for testing actual value triggering (not mapping)
-        apiManager.getApiToHost().setValueOfUserControl(longPressUserControlIndex, longPressValue);
-        
-        // Show notification and debug logging
-        host.showPopupNotification(String.format(
-            "Single Shot: Pad %d → UserControl%d (value: %d)", 
-            padIndex, longPressUserControlIndex, longPressValue
-        ));
-        
-        host.println(String.format(
-            "StudioIOPanelManager: Single shot for Pad %d → UserControl%d with value %d",
             padIndex, longPressUserControlIndex, longPressValue
         ));
     }

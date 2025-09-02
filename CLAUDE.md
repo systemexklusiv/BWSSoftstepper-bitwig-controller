@@ -697,11 +697,89 @@ Result: Only works when ramp crosses current fader position
 - `ApiControllerToHost.java`: Added `setValueOfUserControlImmediately()` method
 - `StudioIOPanelManager.java`: Added "Ramp Test" buttons with ramped burst functionality
 
+## **FUTURE PLAN: Animated Control Movement via Ramps**
+
+### **Concept: Per-Control-Type Ramping Animation**
+**Vision**: Smooth animated transitions for pad control changes instead of instant jumps
+
+### **Implementation Strategy:**
+**Core Method**: Leverage existing `sendUserControlRampedBurst()` architecture from `ApiControllerToHost.java`
+
+### **Per-Pad-Mode Ramp Settings:**
+Each control mode gets individual ramp configuration in Bitwig preferences:
+
+#### **1. Toggle Ramp Settings:**
+- **"Toggle Ramp Enabled"** (checkbox) 
+- **"Toggle Ramp Time"** (string field, parsed to milliseconds)
+- **Effect**: Animate from current state to new toggle state over ramp time
+
+#### **2. Increment Ramp Settings:**
+- **"Increment Ramp Enabled"** (checkbox)
+- **"Increment Ramp Time"** (string field, parsed to milliseconds) 
+- **Effect**: Animate from last value to next increment over ramp time
+
+#### **3. Momentary Ramp Settings:**
+- **"Momentary Ramp Enabled"** (checkbox)
+- **"Momentary Ramp Time"** (string field, parsed to milliseconds)
+- **Effect**: Animate press/release transitions over ramp time
+
+### **Example User Experience:**
+```
+User Setting: Increment Ramp Time = "500"
+Current Value: 64
+User Action: Stomp Pad (increment by step size 10)
+Target Value: 74
+Animation: Smooth ramp 64→65→66→67→68→69→70→71→72→73→74 over 500ms
+```
+
+### **Technical Implementation Notes:**
+- **Reuse ramping infrastructure**: `sendUserControlRampedBurst()` method already handles timing and interpolation
+- **Remove global settings**: Eliminate Global Long Press Settings, use per-control-type settings instead
+- **Studio I/O Panel cleanup**: 
+  - **Keep**: "Assign Longpress N" buttons (still needed for long press UserControl mapping)
+  - **Remove**: "Trigger Once N" and "Ramp Test N" buttons (no longer needed with user takeover setting)
+- **Keep core ramping code**: `sendUserControlRampedBurst()` becomes foundation for animated control movement
+
+### **RAMPED BURST ARCHITECTURE (Preserved for Future Animation System)**
+
+#### **Core Method: `ApiControllerToHost.sendUserControlRampedBurst()`**
+```java
+public void sendUserControlRampedBurst(int userControlIndex, int targetValue, 
+                                     int rampSteps, int burstDelayMs, String description)
+```
+
+#### **Key Features:**
+- **Smart Value Calculation**: Automatically calculates starting value (minimum 5 steps below target)
+- **Linear Interpolation**: Smooth progression using `double progress = (double) currentStep / rampSteps`
+- **Timer-Based Execution**: Uses `Timer.scheduleAtFixedRate()` for precise timing control
+- **Value Normalization**: Handles 0-127 to 0.0-1.0 conversion internally
+- **Debug Integration**: Comprehensive logging and notifications
+- **Parameter Validation**: Input validation for userControlIndex, rampSteps, and delayMs
+
+#### **Animation Logic:**
+```java
+// Calculate ramp starting point (minimum 5 steps below target)
+int startValue = Math.max(0, targetValue - Math.max(5, rampSteps - 1));
+
+// Linear interpolation for smooth progression  
+double progress = (double) currentStep / rampSteps;
+int currentValue = startValue + (valueRange * progress);
+
+// Send using setValueOfUserControl() for proper UserControl identity
+setValueOfUserControl(userControlIndex, currentValue);
+```
+
+#### **Future Adaptation for Animated Controls:**
+- **Toggle Animation**: Ramp from current toggle state to new state over configured time
+- **Increment Animation**: Ramp from current value to current+stepSize over configured time  
+- **Momentary Animation**: Ramp press/release transitions over configured time
+- **Per-Mode Timing**: Each control type gets individual ramp time configuration
+
 ### **Next Session Tasks:**
-1. Complete PERF page implementation (mixed CLIP/USER functionality)  
-2. Test all pad modes work with Bitwig parameter mapping
-3. Consider implementing `setValueOfUserControlImmediately()` for specific scenarios
-4. Verify hardware long press gestures work correctly with current setup
+1. Clean up Studio I/O Panel (remove "Trigger Once" and "Ramp Test" buttons only)
+2. Remove Global Long Press Settings from preferences  
+3. Complete PERF page implementation (mixed CLIP/USER functionality)  
+4. Plan animated ramp settings implementation for future session
 
 ## **STUDIO I/O PANEL RESEARCH & CAPABILITIES**
 

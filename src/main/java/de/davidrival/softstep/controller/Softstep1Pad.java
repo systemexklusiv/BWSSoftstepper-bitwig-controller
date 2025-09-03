@@ -1,7 +1,7 @@
 package de.davidrival.softstep.controller;
 
 import com.bitwig.extension.controller.api.ControllerHost;
-import de.davidrival.softstep.api.SimpleConsolePrinter;
+import de.davidrival.softstep.api.BaseConsolePrinter;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -10,7 +10,7 @@ import java.util.*;
 
 
 @ToString
-public class Softstep1Pad extends SimpleConsolePrinter {
+public class Softstep1Pad extends BaseConsolePrinter {
 
     @Getter
     private final int number;

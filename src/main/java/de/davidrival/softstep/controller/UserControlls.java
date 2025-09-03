@@ -2,14 +2,12 @@ package de.davidrival.softstep.controller;
 
 import com.bitwig.extension.api.util.midi.ShortMidiMessage;
 import de.davidrival.softstep.api.ApiManager;
-import de.davidrival.softstep.api.SimpleConsolePrinter;
-import de.davidrival.softstep.hardware.LedColor;
-import de.davidrival.softstep.hardware.LedLight;
+import de.davidrival.softstep.api.BaseConsolePrinter;
 
 import java.util.List;
 
 
-public class UserControlls extends SimpleConsolePrinter implements HasControllsForPage {
+public class UserControlls extends BaseConsolePrinter implements HasControllsForPage {
 
     private final Page page;
     private final ApiManager apiManager;
@@ -80,8 +78,8 @@ public class UserControlls extends SimpleConsolePrinter implements HasControllsF
                 break;
         }
         
-        // Update hardware LED to initial state
-        apiManager.getSoftstepController().updateLedStates(Page.USER, padIndex, initialLedState);
+        // Update hardware LED to initial state using PERF-aware method
+        apiManager.getSoftstepController().updateLedStatesForPerfMode(Page.USER, padIndex, initialLedState);
     }
 
     @Override
@@ -150,7 +148,8 @@ public class UserControlls extends SimpleConsolePrinter implements HasControllsF
     
     private void updateHardwareLongPressFeedback(int padIndex) {
         // Brief yellow flash to indicate long press was triggered using Page constants
-        apiManager.getSoftstepController().updateLedStates(Page.USER, padIndex, Page.USER_LED_STATES.LONG_PRESS_FLASH);
+        // Use PERF-aware LED update method for hybrid mode compatibility
+        apiManager.getSoftstepController().updateLedStatesForPerfMode(Page.USER, padIndex, Page.USER_LED_STATES.LONG_PRESS_FLASH);
         
         // Restore normal LED state after brief delay (via simple timer)
         // Note: In production, you might want to use a more sophisticated timing mechanism
@@ -314,8 +313,8 @@ public class UserControlls extends SimpleConsolePrinter implements HasControllsF
                 break;
         }
         
-        // Update hardware LED
-        apiManager.getSoftstepController().updateLedStates(Page.USER, padIndex, ledState);
+        // Update hardware LED using PERF-aware method
+        apiManager.getSoftstepController().updateLedStatesForPerfMode(Page.USER, padIndex, ledState);
     }
     
     private int processPressureMode(Softstep1Pad pad, PadConfigurationManager.PadConfig config) {

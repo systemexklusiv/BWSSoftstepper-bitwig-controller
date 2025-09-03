@@ -41,6 +41,27 @@ public enum Page {
                 new LedStates(LedColor.RED, LedLight.OFF),
                 new LedStates(LedColor.GREEN, LedLight.OFF))
             )
+    ),
+
+    PERF(2
+            , new LedStates(LedColor.YELLOW, LedLight.ON)
+            , new LedStates(LedColor.YELLOW, LedLight.OFF)
+            , new ArrayList<>(Arrays.asList(
+                // Pads 0-3: CLIP mode colors (clips)
+                new LedStates(LedColor.YELLOW, LedLight.OFF),  // Pad 0
+                new LedStates(LedColor.YELLOW, LedLight.OFF),  // Pad 1
+                new LedStates(LedColor.YELLOW, LedLight.OFF),  // Pad 2
+                new LedStates(LedColor.YELLOW, LedLight.OFF),  // Pad 3
+                // Pad 4: USER mode color (configurable)
+                new LedStates(LedColor.GREEN, LedLight.ON),    // Pad 4
+                // Pad 5: CLIP mode color (track control)
+                new LedStates(LedColor.GREEN, LedLight.OFF),   // Pad 5
+                // Pads 6-9: USER mode colors (configurable)
+                new LedStates(LedColor.GREEN, LedLight.ON),    // Pad 6
+                new LedStates(LedColor.GREEN, LedLight.ON),    // Pad 7
+                new LedStates(LedColor.GREEN, LedLight.ON),    // Pad 8
+                new LedStates(LedColor.GREEN, LedLight.ON)     // Pad 9
+            ))
     );
 
     public final int pageIndex;

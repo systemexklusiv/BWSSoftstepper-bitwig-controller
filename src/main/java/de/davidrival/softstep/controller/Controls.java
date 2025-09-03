@@ -2,7 +2,7 @@ package de.davidrival.softstep.controller;
 
 import com.bitwig.extension.api.util.midi.ShortMidiMessage;
 import com.bitwig.extension.controller.api.ControllerHost;
-import de.davidrival.softstep.api.SimpleConsolePrinter;
+import de.davidrival.softstep.api.BaseConsolePrinter;
 import de.davidrival.softstep.hardware.SoftstepHardwareBase;
 import lombok.Getter;
 import lombok.Setter;
@@ -12,7 +12,7 @@ import java.util.*;
 
 @Getter
 @Setter
-public class Controls extends SimpleConsolePrinter {
+public class Controls extends BaseConsolePrinter {
 
     List<Softstep1Pad> pads;
 

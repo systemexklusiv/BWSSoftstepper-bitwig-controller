@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static de.davidrival.softstep.api.ApiManager.USER_CONTROL_PARAMETER_RESOLUTION;
 
-public class ApiControllerToHost extends SimpleConsolePrinter{
+public class ApiControllerToHost extends BaseConsolePrinter {
 
     private final ApiManager api;
 

@@ -87,7 +87,8 @@ public class ApiManager {
                     ClipLauncherSlot clipLauncherSlot = getSlotBank().getItemAt(0);
                 if ( !clipLauncherSlot.hasContent().get() ){
 //                    getSoftstepController().p(">>> running special cleanup ");
-                    getSoftstepController().updateLedStates(Page.CLIP, 0, OFF);
+                    // Use PERF-aware LED update method for hybrid mode compatibility
+                    getSoftstepController().updateLedStatesForPerfMode(Page.CLIP, 0, OFF);
                     }
             }
         }, 1000, CLIPS_CONTENT_CLEANUP_PERIOD);
@@ -107,7 +108,8 @@ public class ApiManager {
                 for (int i = 0; i < size; i++) {
                     ClipLauncherSlot clipLauncherSlot = getSlotBank().getItemAt(i);
                     if ( !clipLauncherSlot.hasContent().get() ){
-                        getSoftstepController().updateLedStates(Page.CLIP, i, OFF);
+                        // Use PERF-aware LED update method for hybrid mode compatibility
+                        getSoftstepController().updateLedStatesForPerfMode(Page.CLIP, i, OFF);
                     }
                 }
 

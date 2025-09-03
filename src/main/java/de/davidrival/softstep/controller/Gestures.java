@@ -1,7 +1,7 @@
 package de.davidrival.softstep.controller;
 
 import com.bitwig.extension.controller.api.ControllerHost;
-import de.davidrival.softstep.api.SimpleConsolePrinter;
+import de.davidrival.softstep.api.BaseConsolePrinter;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -13,7 +13,7 @@ import java.util.TimerTask;
 @Getter
 @Setter
 @ToString
-public class Gestures extends SimpleConsolePrinter {
+public class Gestures extends BaseConsolePrinter {
 
     public enum GestureOffsets {
         pressure, footOn, doubleTrigger, longPress

@@ -4,15 +4,15 @@ import com.bitwig.extension.controller.api.ControllerHost;
 
 import java.util.Optional;
 
-public class SimpleConsolePrinter {
+public class BaseConsolePrinter {
 
     private Optional<ControllerHost> host;
 
-    public SimpleConsolePrinter(ControllerHost host) {
+    public BaseConsolePrinter(ControllerHost host) {
         this.host = Optional.ofNullable(host);
     }
 
-    public SimpleConsolePrinter() {
+    public BaseConsolePrinter() {
     }
 
     public void p(String text) {

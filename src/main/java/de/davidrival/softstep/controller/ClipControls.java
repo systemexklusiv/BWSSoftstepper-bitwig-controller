@@ -2,14 +2,14 @@ package de.davidrival.softstep.controller;
 
 import com.bitwig.extension.api.util.midi.ShortMidiMessage;
 import de.davidrival.softstep.api.ApiManager;
-import de.davidrival.softstep.api.SimpleConsolePrinter;
+import de.davidrival.softstep.api.BaseConsolePrinter;
 
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 
-public class ClipControls extends SimpleConsolePrinter implements HasControllsForPage {
+public class ClipControls extends BaseConsolePrinter implements HasControllsForPage {
 
 
     public ClipControls(Page page, ApiManager apiManager) {

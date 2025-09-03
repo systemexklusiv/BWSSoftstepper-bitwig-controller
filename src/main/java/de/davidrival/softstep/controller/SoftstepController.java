@@ -3,7 +3,7 @@ package de.davidrival.softstep.controller;
 import com.bitwig.extension.api.util.midi.ShortMidiMessage;
 import com.bitwig.extension.controller.api.ControllerHost;
 import de.davidrival.softstep.api.ApiManager;
-import de.davidrival.softstep.api.SimpleConsolePrinter;
+import de.davidrival.softstep.api.BaseConsolePrinter;
 import de.davidrival.softstep.hardware.SoftstepHardware;
 
 import de.davidrival.softstep.hardware.SoftstepHardwareBase;
@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 
 @Getter
 @Setter
-public class SoftstepController extends SimpleConsolePrinter {
+public class SoftstepController extends BaseConsolePrinter {
 
     // Expression pedal disabled to avoid UserControl conflicts with long press (10-19)
     // public static final int USER_CONTROL_INDEX_FOR_PEDAL = 10;
@@ -52,8 +52,10 @@ public class SoftstepController extends SimpleConsolePrinter {
         hasControllsForPages = new ArrayList<>();
         HasControllsForPage clipControlls = new ClipControls(Page.CLIP, apiManager);
         HasControllsForPage userControlls = new UserControlls(Page.USER, apiManager, padConfigManager);
+        HasControllsForPage perfPage = new PerfConsolePrinter(Page.PERF, apiManager, padConfigManager);
         hasControllsForPages.add(clipControlls);
         hasControllsForPages.add(userControlls);
+        hasControllsForPages.add(perfPage);
 
     }
 
@@ -134,9 +136,11 @@ public class SoftstepController extends SimpleConsolePrinter {
     }
     
     private void cyclePage() {
-        // Simple cycle between the two available pages
+        // Cycle through all three available pages: CLIP → USER → PERF → CLIP
         if (pages.getCurrentPage().equals(Page.CLIP)) {
             pages.setCurrentPage(Page.USER);
+        } else if (pages.getCurrentPage().equals(Page.USER)) {
+            pages.setCurrentPage(Page.PERF);
         } else {
             pages.setCurrentPage(Page.CLIP);
         }
@@ -166,6 +170,34 @@ public class SoftstepController extends SimpleConsolePrinter {
 
         // Only render the led states of the active page
         if (pages.getCurrentPage().equals(page)) {
+            softstepHardware.drawLedAt(index, ledStates);
+        }
+    }
+    
+    /**
+     * Updates LED states for PERF mode, which needs special handling since it's a hybrid mode.
+     * PERF mode uses CLIP functionality for pads 0-3,5 and USER functionality for pads 4,6-9.
+     * This method ensures LEDs are updated correctly regardless of which internal page system
+     * is calling the update.
+     * 
+     * @param page The original page making the LED update call (Page.CLIP or Page.USER)
+     * @param index The pad index (0-9)
+     * @param ledStates The LED states to apply
+     */
+    public void updateLedStatesForPerfMode(Page page, int index, LedStates ledStates) {
+        // Store LED state in the original page system (for mode switching)
+        pages.distributeLedStates(page, index, ledStates);
+        
+        // If we're currently in PERF mode, render the LED immediately
+        if (pages.getCurrentPage().equals(Page.PERF)) {
+            softstepHardware.drawLedAt(index, ledStates);
+            
+            // Debug logging
+            p(String.format("PERF Mode LED Update: Pad %d from %s page with state %s", 
+                index, page.toString(), ledStates.toString()));
+        }
+        // If not in PERF mode, fall back to normal behavior
+        else if (pages.getCurrentPage().equals(page)) {
             softstepHardware.drawLedAt(index, ledStates);
         }
     }

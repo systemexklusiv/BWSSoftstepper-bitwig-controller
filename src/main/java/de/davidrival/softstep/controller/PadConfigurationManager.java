@@ -42,13 +42,11 @@ public class PadConfigurationManager {
     private final SettableBooleanValue[] padLongPressEnabledSettings;
     private final SettableStringValue[] padLongPressSettings;
     
-    // Global burst settings for long press mapping
-    private final SettableStringValue burstCountSetting;
-    private final SettableStringValue burstDelaySetting;
-    
     private final PadConfig[] currentConfigs;
-    private int burstCount = 15;  // Default values
-    private int burstDelayMs = 50;
+    
+    // Hardcoded burst settings for long press mapping
+    private static final int BURST_COUNT = 10;
+    private static final int BURST_DELAY_MS = 25;
     
     public PadConfigurationManager(ControllerHost host) {
         this.host = host;
@@ -61,16 +59,8 @@ public class PadConfigurationManager {
         this.padLongPressSettings = new SettableStringValue[NUM_PADS];
         this.currentConfigs = new PadConfig[NUM_PADS];
         
-        // Initialize global burst settings
-        Preferences preferences = host.getPreferences();
-        this.burstCountSetting = preferences.getStringSetting(
-            "Burst Count", "Global Long Press Settings", 8, "15");
-        this.burstDelaySetting = preferences.getStringSetting(
-            "Burst Delay (ms)", "Global Long Press Settings", 8, "50");
-        
         setupPreferences();
         setupObservers();
-        updateBurstSettings(); // Initialize burst values from settings
     }
     
     private void setupPreferences() {
@@ -90,8 +80,8 @@ public class PadConfigurationManager {
                 "Max Value", padName, 8, "127");
                 
             padStepSettings[i] = preferences.getStringSetting(
-                "Step Size", padName, 8, "1");
-                
+                "Step Size | only for 'increment' and 'pressure' (multiplies value).", padName, 8, "1");
+
             padInvertedSettings[i] = preferences.getBooleanSetting(
                 "Inverted", padName, false);
                 
@@ -185,19 +175,6 @@ public class PadConfigurationManager {
             });
         }
         
-        // Add burst settings observers
-        burstCountSetting.markInterested();
-        burstDelaySetting.markInterested();
-        
-        burstCountSetting.addValueObserver(value -> {
-            updateBurstSettings();
-            host.println("Long press burst count changed to: '" + value + "'");
-        });
-        
-        burstDelaySetting.addValueObserver(value -> {
-            updateBurstSettings();
-            host.println("Long press burst delay changed to: '" + value + "'");
-        });
     }
     
     private void updateConfigFromSettings(int padIndex) {
@@ -283,24 +260,11 @@ public class PadConfigurationManager {
         host.println("All pads reset to default settings");
     }
     
-    private void updateBurstSettings() {
-        String countString = burstCountSetting.get();
-        String delayString = burstDelaySetting.get();
-        
-        // Parse burst count (valid range: 1-50)
-        burstCount = parseIntegerValue(countString, 1, 50, 15, "Burst Count", -1);
-        
-        // Parse burst delay (valid range: 10-1000ms)
-        burstDelayMs = parseIntegerValue(delayString, 10, 1000, 50, "Burst Delay", -1);
-        
-        host.println("DEBUG: Burst settings updated - count:" + burstCount + " delay:" + burstDelayMs + "ms");
-    }
-    
     public int getBurstCount() {
-        return burstCount;
+        return BURST_COUNT;
     }
     
     public int getBurstDelayMs() {
-        return burstDelayMs;
+        return BURST_DELAY_MS;
     }
 }

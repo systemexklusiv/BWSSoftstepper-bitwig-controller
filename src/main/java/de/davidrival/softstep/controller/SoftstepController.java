@@ -188,17 +188,54 @@ public class SoftstepController extends BaseConsolePrinter {
         // Store LED state in the original page system (for mode switching)
         pages.distributeLedStates(page, index, ledStates);
         
-        // If we're currently in PERF mode, render the LED immediately
+        // If we're currently in PERF mode, check if this pad assignment is valid
         if (pages.getCurrentPage().equals(Page.PERF)) {
-            softstepHardware.drawLedAt(index, ledStates);
-            
-            // Debug logging
-            p(String.format("PERF Mode LED Update: Pad %d from %s page with state %s", 
-                index, page.toString(), ledStates.toString()));
+            if (shouldRenderLedInPerfMode(page, index)) {
+                softstepHardware.drawLedAt(index, ledStates);
+                
+                // Debug logging
+                p(String.format("PERF Mode LED Update: Pad %d from %s page with state %s", 
+                    index, page.toString(), ledStates.toString()));
+            } else {
+                // Debug logging for blocked updates
+                p(String.format("PERF Mode LED BLOCKED: Pad %d from %s page (assigned to different subsystem)", 
+                    index, page.toString()));
+            }
         }
         // If not in PERF mode, fall back to normal behavior
         else if (pages.getCurrentPage().equals(page)) {
             softstepHardware.drawLedAt(index, ledStates);
+        }
+    }
+    
+    /**
+     * Determines if a LED update should be rendered in PERF mode based on pad assignments.
+     * PERF mode pad assignment:
+     * - Pads 0-3, 5: CLIP mode
+     * - Pad 4: TRACK_CYCLE (handled by PERF mode directly)
+     * - Pads 6-9: USER mode
+     * 
+     * @param sourcePage The page/subsystem requesting the LED update
+     * @param padIndex The pad index (0-9)
+     * @return true if this LED update should be rendered in PERF mode
+     */
+    private boolean shouldRenderLedInPerfMode(Page sourcePage, int padIndex) {
+        switch (sourcePage) {
+            case CLIP:
+                // CLIP mode controls pads 0-3 and 5 in PERF mode
+                return (padIndex <= 3) || (padIndex == 5);
+            
+            case USER:
+                // USER mode controls pads 6-9 in PERF mode
+                return (padIndex >= 6 && padIndex <= 9);
+            
+            case PERF:
+                // PERF mode can update any pad (for BWS track cycle on pad 4, etc.)
+                return true;
+            
+            default:
+                // Unknown source page - allow for backward compatibility
+                return true;
         }
     }
 

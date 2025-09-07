@@ -1,6 +1,7 @@
 package de.davidrival.softstep.api;
 
 import com.bitwig.extension.controller.api.*;
+import de.davidrival.softstep.controller.BwsTrackDiscoveryService;
 import de.davidrival.softstep.controller.Page;
 import de.davidrival.softstep.controller.SoftstepController;
 import lombok.Getter;
@@ -43,6 +44,9 @@ public class ApiManager {
     private SoftstepController softstepController;
 
     private ControllerHost host;
+    
+    // BWS Track Discovery Service
+    private BwsTrackDiscoveryService bwsTrackDiscoveryService;
 
     public ApiManager(ControllerHost host, SoftstepController softstepController) {
 
@@ -74,9 +78,12 @@ public class ApiManager {
 
 //        runPageCleanUpTask();
 
-        runClipCleanupTaskEach();
-
-        run1stClipCheckTask();
+        // Disabled timer-based LED cleanup to reduce log spam
+        // runClipCleanupTaskEach();
+        // run1stClipCheckTask();
+        
+        // Initialize BWS Track Discovery Service
+        this.bwsTrackDiscoveryService = new BwsTrackDiscoveryService(host);
     }
 
     private void run1stClipCheckTask() {
@@ -140,6 +147,26 @@ public class ApiManager {
     
     public void setSoftstepController(SoftstepController softstepController) {
         this.softstepController = softstepController;
+    }
+    
+    /**
+     * Initializes BWS Track Discovery after controller setup is complete.
+     * Should be called after all controller initialization is finished.
+     */
+    public void initializeBwsDiscovery() {
+        if (bwsTrackDiscoveryService != null) {
+            host.println("ApiManager: Starting BWS Track Discovery initialization...");
+            bwsTrackDiscoveryService.initialize();
+        }
+    }
+    
+    /**
+     * Gets the BWS Track Discovery Service for track cycling operations.
+     * 
+     * @return BwsTrackDiscoveryService instance, or null if not initialized
+     */
+    public BwsTrackDiscoveryService getBwsTrackDiscoveryService() {
+        return bwsTrackDiscoveryService;
     }
 
 }

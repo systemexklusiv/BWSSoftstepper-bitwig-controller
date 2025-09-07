@@ -55,6 +55,9 @@ public class SoftstepperExtension extends ControllerExtension
       // Initialize Studio I/O Panel Manager after SoftstepController (which creates ApiManager)
       studioIOPanelManager = new StudioIOPanelManager(host, softstepController.getApiManager(), padConfigurationManager);
 
+      // Initialize BWS Track Discovery after all controller setup is complete
+      softstepController.getApiManager().initializeBwsDiscovery();
+
       softstepController.display();
 
       host.showPopupNotification("BWSSoftstepper Native Initialized");

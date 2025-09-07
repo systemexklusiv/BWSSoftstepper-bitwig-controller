@@ -120,6 +120,16 @@ public enum Page {
         // Special States
         public static final LedStates LONG_PRESS_FLASH = new LedStates(LedColor.YELLOW, LedLight.FLASH);  // Yellow flash for long press
         public static final LedStates DISABLED = new LedStates(LedColor.GREEN, LedLight.OFF);           // Off state
+        
+        // BWS TRACK_CYCLE Mode - Shows which BWS track is currently active
+        public static final LedStates BWS_TRACK_0 = new LedStates(LedColor.YELLOW, LedLight.ON);         // BWS:0 - Yellow solid
+        public static final LedStates BWS_TRACK_1 = new LedStates(LedColor.YELLOW, LedLight.BLINK);      // BWS:1 - Yellow blink
+        public static final LedStates BWS_TRACK_2 = new LedStates(LedColor.YELLOW, LedLight.FAST_BLINK); // BWS:2 - Yellow fast blink
+        public static final LedStates BWS_TRACK_3 = new LedStates(LedColor.RED, LedLight.ON);            // BWS:3 - Red solid
+        public static final LedStates BWS_TRACK_4 = new LedStates(LedColor.RED, LedLight.BLINK);         // BWS:4 - Red blink
+        public static final LedStates BWS_TRACK_5 = new LedStates(LedColor.RED, LedLight.FAST_BLINK);    // BWS:5 - Red fast blink
+        public static final LedStates BWS_INACTIVE = new LedStates(LedColor.GREEN, LedLight.OFF);        // No BWS tracks available
+        public static final LedStates BWS_NON_BWS_TRACK = new LedStates(LedColor.GREEN, LedLight.BLINK); // Non-BWS track selected
     }
 
     public static class PAD_INDICES {

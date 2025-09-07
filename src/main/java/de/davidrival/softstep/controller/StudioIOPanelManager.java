@@ -21,6 +21,9 @@ public class StudioIOPanelManager {
     private final SettableEnumValue[] longPressTestButtons;
     private final boolean[] initializationComplete;
     
+    // BWS Track Discovery rescan button
+    private final SettableEnumValue bwsRescanButton;
+    
     public StudioIOPanelManager(ControllerHost host, ApiManager apiManager, PadConfigurationManager padConfigManager) {
         this.host = host;
         this.apiManager = apiManager;
@@ -28,6 +31,14 @@ public class StudioIOPanelManager {
         this.documentState = host.getDocumentState();
         this.longPressTestButtons = new SettableEnumValue[NUM_PADS];
         this.initializationComplete = new boolean[NUM_PADS];
+        
+        // Create BWS rescan button
+        this.bwsRescanButton = documentState.getEnumSetting(
+            "Rescan BWS Tracks",
+            "BWS Track Discovery", 
+            new String[]{IDLE_VALUE, TRIGGER_VALUE}, 
+            IDLE_VALUE
+        );
         
         createStudioIOPanelControls();
         setupObservers();
@@ -91,6 +102,21 @@ public class StudioIOPanelManager {
                 }
             }, 1000); // 1 second delay to ensure everything is properly initialized
         }
+        
+        // Set up BWS rescan button observer
+        bwsRescanButton.addValueObserver(value -> {
+            if (TRIGGER_VALUE.equals(value)) {
+                triggerBwsRescan();
+                
+                // Reset button to idle state
+                new java.util.Timer().schedule(new java.util.TimerTask() {
+                    @Override
+                    public void run() {
+                        bwsRescanButton.set(IDLE_VALUE);
+                    }
+                }, 100);
+            }
+        });
     }
     
     /**
@@ -206,5 +232,25 @@ public class StudioIOPanelManager {
             "StudioIOPanelManager: %d test controls created, %d pads have long press enabled",
             NUM_PADS, enabledLongPressCount
         );
+    }
+    
+    /**
+     * Triggers a BWS track discovery rescan.
+     * This allows users to manually refresh the BWS track detection
+     * when tracks are added, removed, or renamed.
+     */
+    private void triggerBwsRescan() {
+        host.showPopupNotification("Rescanning BWS tracks...");
+        host.println("StudioIOPanelManager: Manual BWS track rescan triggered");
+        
+        BwsTrackDiscoveryService bwsService = apiManager.getBwsTrackDiscoveryService();
+        
+        if (bwsService != null) {
+            bwsService.rediscoverBwsTracks();
+            host.showPopupNotification("BWS track rescan completed");
+        } else {
+            host.showPopupNotification("BWS service not available");
+            host.println("StudioIOPanelManager: BWS service is null, cannot rescan");
+        }
     }
 }

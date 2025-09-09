@@ -1,6 +1,7 @@
 package de.davidrival.softstep.controller;
 
 import com.bitwig.extension.controller.api.*;
+import de.davidrival.softstep.debug.DebugLogger;
 
 public class PadConfigurationManager {
     
@@ -48,6 +49,12 @@ public class PadConfigurationManager {
     private static final int BURST_COUNT = 10;
     private static final int BURST_DELAY_MS = 25;
     
+    // Debug Control Settings
+    private final SettableBooleanValue debugCommonSetting;
+    private final SettableBooleanValue debugPerfSetting;
+    private final SettableBooleanValue debugUserSetting;
+    private final SettableBooleanValue debugClipSetting;
+    
     public PadConfigurationManager(ControllerHost host) {
         this.host = host;
         this.padModeSettings = new SettableEnumValue[NUM_PADS];
@@ -58,6 +65,19 @@ public class PadConfigurationManager {
         this.padLongPressEnabledSettings = new SettableBooleanValue[NUM_PADS];
         this.padLongPressSettings = new SettableStringValue[NUM_PADS];
         this.currentConfigs = new PadConfig[NUM_PADS];
+        
+        // Initialize debug settings
+        Preferences preferences = host.getPreferences();
+        this.debugCommonSetting = preferences.getBooleanSetting("Debug Common", "Debug Settings", false);
+        this.debugPerfSetting = preferences.getBooleanSetting("Debug PERF Mode", "Debug Settings", false);
+        this.debugUserSetting = preferences.getBooleanSetting("Debug USER Mode", "Debug Settings", false);
+        this.debugClipSetting = preferences.getBooleanSetting("Debug CLIP Mode", "Debug Settings", false);
+        
+        // Mark debug settings as interested
+        debugCommonSetting.markInterested();
+        debugPerfSetting.markInterested();
+        debugUserSetting.markInterested();
+        debugClipSetting.markInterested();
         
         setupPreferences();
         setupObservers();
@@ -103,7 +123,7 @@ public class PadConfigurationManager {
             updateConfigFromSettings(padIndex);
         }
         
-        host.println("PadConfigurationManager initialized with default settings");
+        DebugLogger.common(host, this, "PadConfigurationManager initialized with default settings");
     }
     
     // Custom parsing methods with validation
@@ -141,37 +161,37 @@ public class PadConfigurationManager {
             
             padModeSettings[i].addValueObserver(value -> {
                 updateConfigFromSettings(padIndex);
-                host.println("Pad " + (padIndex + 1) + " mode changed to: " + value);
+                DebugLogger.user(host, this, "Pad " + (padIndex + 1) + " mode changed to: " + value);
             });
             
             padMinSettings[i].addValueObserver(value -> {
                 updateConfigFromSettings(padIndex);
-                host.println("Pad " + (padIndex + 1) + " min value changed to: '" + value + "'");
+                DebugLogger.user(host, this, "Pad " + (padIndex + 1) + " min value changed to: '" + value + "'");
             });
             
             padMaxSettings[i].addValueObserver(value -> {
                 updateConfigFromSettings(padIndex);
-                host.println("Pad " + (padIndex + 1) + " max value changed to: '" + value + "'");
+                DebugLogger.user(host, this, "Pad " + (padIndex + 1) + " max value changed to: '" + value + "'");
             });
             
             padStepSettings[i].addValueObserver(value -> {
                 updateConfigFromSettings(padIndex);
-                host.println("Pad " + (padIndex + 1) + " step size changed to: '" + value + "'");
+                DebugLogger.user(host, this, "Pad " + (padIndex + 1) + " step size changed to: '" + value + "'");
             });
             
             padInvertedSettings[i].addValueObserver(value -> {
                 updateConfigFromSettings(padIndex);
-                host.println("Pad " + (padIndex + 1) + " inverted changed to: " + value);
+                DebugLogger.user(host, this, "Pad " + (padIndex + 1) + " inverted changed to: " + value);
             });
             
             padLongPressEnabledSettings[i].addValueObserver(value -> {
                 updateConfigFromSettings(padIndex);
-                host.println("Pad " + (padIndex + 1) + " long press enabled changed to: " + value);
+                DebugLogger.user(host, this, "Pad " + (padIndex + 1) + " long press enabled changed to: " + value);
             });
             
             padLongPressSettings[i].addValueObserver(value -> {
                 updateConfigFromSettings(padIndex);
-                host.println("Pad " + (padIndex + 1) + " long press value changed to: '" + value + "'");
+                DebugLogger.user(host, this, "Pad " + (padIndex + 1) + " long press value changed to: '" + value + "'");
             });
         }
         
@@ -219,7 +239,7 @@ public class PadConfigurationManager {
         config.longPressValue = parseIntegerValue(longPressString, 0, 127, 0, "Long Press Value", padIndex);
         
         // Debug logging
-        host.println("DEBUG: Pad " + padIndex + " config updated - min:" + config.min + 
+        DebugLogger.user(host, this, "Pad " + padIndex + " config updated - min:" + config.min + 
                     " max:" + config.max + " stepSize:" + config.stepSize + 
                     " mode:" + config.mode + " inverted:" + config.inverted +
                     " longPressEnabled:" + config.longPressEnabled + " longPressValue:" + config.longPressValue);
@@ -250,14 +270,14 @@ public class PadConfigurationManager {
         padStepSettings[padIndex].set("1.0");
         padInvertedSettings[padIndex].set(false);
         
-        host.println("Pad " + (padIndex + 1) + " reset to default settings");
+        DebugLogger.user(host, this, "Pad " + (padIndex + 1) + " reset to default settings");
     }
     
     public void resetAllPadsToDefaults() {
         for (int i = 0; i < NUM_PADS; i++) {
             resetPadToDefaults(i);
         }
-        host.println("All pads reset to default settings");
+        DebugLogger.user(host, this, "All pads reset to default settings");
     }
     
     public int getBurstCount() {
@@ -266,5 +286,22 @@ public class PadConfigurationManager {
     
     public int getBurstDelayMs() {
         return BURST_DELAY_MS;
+    }
+    
+    // Debug flag getters
+    public boolean isDebugCommon() {
+        return debugCommonSetting.get();
+    }
+    
+    public boolean isDebugPerf() {
+        return debugPerfSetting.get();
+    }
+    
+    public boolean isDebugUser() {
+        return debugUserSetting.get();
+    }
+    
+    public boolean isDebugClip() {
+        return debugClipSetting.get();
     }
 }

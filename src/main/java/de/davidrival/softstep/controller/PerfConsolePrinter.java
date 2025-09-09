@@ -3,6 +3,7 @@ package de.davidrival.softstep.controller;
 import com.bitwig.extension.api.util.midi.ShortMidiMessage;
 import de.davidrival.softstep.api.ApiManager;
 import de.davidrival.softstep.api.BaseConsolePrinter;
+import de.davidrival.softstep.debug.DebugLogger;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -105,31 +106,31 @@ public class PerfConsolePrinter extends BaseConsolePrinter implements HasControl
             int padIndex = pad.getNumber();
             Gestures gestures = pad.gestures();
             
-            apiManager.getHost().println(String.format("PERF Mode: Processing TRACK_CYCLE PAD%d (pressure: %d, footOn: %s, footOff: %s)", 
+            DebugLogger.perf(apiManager.getHost(), padConfigManager, String.format("PERF Mode: Processing TRACK_CYCLE PAD%d (pressure: %d, footOn: %s, footOff: %s)", 
                 padIndex, gestures.getPressure(), gestures.isFootOn(), gestures.isFootOff()));
             
             // Only cycle on pad press (not release)
             if (gestures.isFootOn()) {
-                apiManager.getHost().println(String.format("PERF Mode: PAD%d PRESSED - attempting BWS track cycle", padIndex));
+                DebugLogger.perf(apiManager.getHost(), padConfigManager, String.format("PERF Mode: PAD%d PRESSED - attempting BWS track cycle", padIndex));
                 
                 BwsTrackDiscoveryService bwsService = apiManager.getBwsTrackDiscoveryService();
                 
                 if (bwsService != null && bwsService.isInitialized()) {
-                    apiManager.getHost().println(String.format("PERF Mode: BWS Service available, found %d BWS tracks", 
+                    DebugLogger.perf(apiManager.getHost(), padConfigManager, String.format("PERF Mode: BWS Service available, found %d BWS tracks", 
                         bwsService.getBwsTrackCount()));
                     
                     boolean cycled = bwsService.cycleToNextBwsTrack();
                     
                     if (cycled) {
                         int currentSlot = bwsService.getCurrentBwsSlot();
-                        apiManager.getHost().println(String.format("PERF Mode: PAD%d triggered BWS track cycle SUCCESS - current slot: %d", padIndex, currentSlot));
+                        DebugLogger.perf(apiManager.getHost(), padConfigManager, String.format("PERF Mode: PAD%d triggered BWS track cycle SUCCESS - current slot: %d", padIndex, currentSlot));
                         updateTrackCycleLed(padIndex, currentSlot);
                     } else {
-                        apiManager.getHost().println(String.format("PERF Mode: PAD%d - No BWS tracks available for cycling", padIndex));
+                        DebugLogger.perf(apiManager.getHost(), padConfigManager, String.format("PERF Mode: PAD%d - No BWS tracks available for cycling", padIndex));
                         updateTrackCycleLed(padIndex, -1); // No BWS tracks
                     }
                 } else {
-                    apiManager.getHost().println(String.format("PERF Mode: PAD%d - BWS Discovery not initialized or null", padIndex));
+                    DebugLogger.perf(apiManager.getHost(), padConfigManager, String.format("PERF Mode: PAD%d - BWS Discovery not initialized or null", padIndex));
                 }
                 
                 // Mark pad as consumed
@@ -243,7 +244,7 @@ public class PerfConsolePrinter extends BaseConsolePrinter implements HasControl
         // Update LED using PERF-aware method
         apiManager.getSoftstepController().updateLedStatesForPerfMode(Page.PERF, TRACK_CYCLE_PAD, ledState);
         
-        apiManager.getHost().println(String.format("BWS LED Callback: Updated PAD%d to show BWS:%d state (%s)", 
+        DebugLogger.perf(apiManager.getHost(), padConfigManager, String.format("BWS LED Callback: Updated PAD%d to show BWS:%d state (%s)", 
             TRACK_CYCLE_PAD, bwsSlot, ledState.toString()));
     }
     

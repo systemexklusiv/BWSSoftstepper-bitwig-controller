@@ -3,7 +3,9 @@ package de.davidrival.softstep.api;
 import com.bitwig.extension.controller.api.*;
 import de.davidrival.softstep.controller.BwsTrackDiscoveryService;
 import de.davidrival.softstep.controller.Page;
+import de.davidrival.softstep.controller.PadConfigurationManager;
 import de.davidrival.softstep.controller.SoftstepController;
+import de.davidrival.softstep.debug.DebugLogger;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -48,7 +50,7 @@ public class ApiManager {
     // BWS Track Discovery Service
     private BwsTrackDiscoveryService bwsTrackDiscoveryService;
 
-    public ApiManager(ControllerHost host, SoftstepController softstepController) {
+    public ApiManager(ControllerHost host, SoftstepController softstepController, PadConfigurationManager padConfigManager) {
 
         this.host = host;
         this.softstepController = softstepController;
@@ -83,7 +85,7 @@ public class ApiManager {
         // run1stClipCheckTask();
         
         // Initialize BWS Track Discovery Service
-        this.bwsTrackDiscoveryService = new BwsTrackDiscoveryService(host);
+        this.bwsTrackDiscoveryService = new BwsTrackDiscoveryService(host, padConfigManager);
     }
 
     private void run1stClipCheckTask() {
@@ -155,7 +157,7 @@ public class ApiManager {
      */
     public void initializeBwsDiscovery() {
         if (bwsTrackDiscoveryService != null) {
-            host.println("ApiManager: Starting BWS Track Discovery initialization...");
+            DebugLogger.common(host, null, "ApiManager: Starting BWS Track Discovery initialization...");
             bwsTrackDiscoveryService.initialize();
         }
     }

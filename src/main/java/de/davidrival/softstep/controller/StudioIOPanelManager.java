@@ -2,6 +2,7 @@ package de.davidrival.softstep.controller;
 
 import com.bitwig.extension.controller.api.*;
 import de.davidrival.softstep.api.ApiManager;
+import de.davidrival.softstep.debug.DebugLogger;
 
 /**
  * Manages the Studio I/O Panel controls for long press testing.
@@ -68,7 +69,7 @@ public class StudioIOPanelManager {
             initializationComplete[i] = false;
         }
         
-        host.println("StudioIOPanelManager: Created " + NUM_PADS + " long press assignment controls in Studio I/O Panel");
+        DebugLogger.common(host, padConfigManager, "StudioIOPanelManager: Created " + NUM_PADS + " long press assignment controls in Studio I/O Panel");
     }
     
     /**
@@ -155,7 +156,7 @@ public class StudioIOPanelManager {
         );
         
         // Debug logging
-        host.println(String.format(
+        DebugLogger.user(host, padConfigManager, String.format(
             "StudioIOPanelManager: Triggered long press burst for Pad %d → UserControl%d with value %d",
             padIndex, longPressUserControlIndex, longPressValue
         ));
@@ -195,7 +196,7 @@ public class StudioIOPanelManager {
         );
         
         // Debug logging
-        host.println(String.format(
+        DebugLogger.user(host, padConfigManager, String.format(
             "StudioIOPanelManager: Triggered ramped burst for Pad %d → UserControl%d (ramping to value %d in %d steps)",
             padIndex, longPressUserControlIndex, targetValue, padConfigManager.getBurstCount()
         ));
@@ -210,7 +211,7 @@ public class StudioIOPanelManager {
         // additional logic here to show/hide controls based on configuration
         // if needed in the future
         
-        host.println("StudioIOPanelManager: Updated control availability");
+        DebugLogger.common(host, padConfigManager, "StudioIOPanelManager: Updated control availability");
     }
     
     /**
@@ -241,7 +242,7 @@ public class StudioIOPanelManager {
      */
     private void triggerBwsRescan() {
         host.showPopupNotification("Rescanning BWS tracks...");
-        host.println("StudioIOPanelManager: Manual BWS track rescan triggered");
+        DebugLogger.common(host, padConfigManager, "StudioIOPanelManager: Manual BWS track rescan triggered");
         
         BwsTrackDiscoveryService bwsService = apiManager.getBwsTrackDiscoveryService();
         
@@ -250,7 +251,7 @@ public class StudioIOPanelManager {
             host.showPopupNotification("BWS track rescan completed");
         } else {
             host.showPopupNotification("BWS service not available");
-            host.println("StudioIOPanelManager: BWS service is null, cannot rescan");
+            DebugLogger.common(host, padConfigManager, "StudioIOPanelManager: BWS service is null, cannot rescan");
         }
     }
 }

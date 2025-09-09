@@ -4,6 +4,7 @@ import com.bitwig.extension.controller.api.ControllerHost;
 import com.bitwig.extension.controller.api.TrackBank;
 import com.bitwig.extension.controller.api.Track;
 import com.bitwig.extension.controller.api.CursorTrack;
+import de.davidrival.softstep.debug.DebugLogger;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -29,6 +30,7 @@ public class BwsTrackDiscoveryService {
     private final ControllerHost host;
     private final TrackBank allTracksBank;  // Large bank for discovery
     private final CursorTrack cursorTrack;   // Track current Bitwig selection
+    private final PadConfigurationManager padConfigManager; // For debug flags
     
     // BWS track storage
     private final Map<Integer, Track> bwsTrackReferences = new HashMap<>();  // BWS slot → Track reference
@@ -43,8 +45,9 @@ public class BwsTrackDiscoveryService {
     // LED update callback
     private LedUpdateCallback ledUpdateCallback;
     
-    public BwsTrackDiscoveryService(ControllerHost host) {
+    public BwsTrackDiscoveryService(ControllerHost host, PadConfigurationManager padConfigManager) {
         this.host = host;
+        this.padConfigManager = padConfigManager;
         
         // Create large TrackBank for project-wide discovery
         this.allTracksBank = host.createMainTrackBank(DISCOVERY_TRACK_BANK_SIZE, 0, 0);
@@ -52,7 +55,7 @@ public class BwsTrackDiscoveryService {
         // Create cursor track to observe current selection
         this.cursorTrack = host.createCursorTrack("BWS_CURSOR", "BWS Cursor", 0, 0, true);
         
-        host.println("BwsTrackDiscoveryService: Initialized with " + DISCOVERY_TRACK_BANK_SIZE + " track discovery bank");
+        DebugLogger.common(host, padConfigManager, "BwsTrackDiscoveryService: Initialized with " + DISCOVERY_TRACK_BANK_SIZE + " track discovery bank");
     }
     
     /**
@@ -61,20 +64,20 @@ public class BwsTrackDiscoveryService {
      */
     public void initialize() {
         if (initialized) {
-            host.println("BwsTrackDiscoveryService: Already initialized, skipping");
+            DebugLogger.common(host, padConfigManager, "BwsTrackDiscoveryService: Already initialized, skipping");
             return;
         }
         
-        host.println("BwsTrackDiscoveryService: Setting up track name observers...");
+        DebugLogger.common(host, padConfigManager, "BwsTrackDiscoveryService: Setting up track name observers...");
         
         // Observe track count changes to trigger rediscovery when tracks become available
         allTracksBank.itemCount().markInterested();
         allTracksBank.itemCount().addValueObserver(trackCount -> {
-            host.println("BwsTrackDiscoveryService: Track count changed to " + trackCount + " - triggering rediscovery");
+            DebugLogger.common(host, padConfigManager, "BwsTrackDiscoveryService: Track count changed to " + trackCount + " - triggering rediscovery");
             if (trackCount > 0 && initialized) {
                 // Rediscover BWS tracks when new tracks become available
                 host.scheduleTask(() -> {
-                    host.println("BwsTrackDiscoveryService: Auto-rediscovery triggered by track count change");
+                    DebugLogger.common(host, padConfigManager, "BwsTrackDiscoveryService: Auto-rediscovery triggered by track count change");
                     rediscoverBwsTracks();
                 }, 500); // Short delay to let track data populate
             }
@@ -91,7 +94,7 @@ public class BwsTrackDiscoveryService {
             
             // Observe track name changes for BWS tag detection
             track.name().addValueObserver(trackName -> {
-                host.println(String.format("BWS Observer: Track %d name changed to: \"%s\"", finalTrackIndex, trackName));
+                DebugLogger.common(host, padConfigManager, String.format("BWS Observer: Track %d name changed to: \"%s\"", finalTrackIndex, trackName));
                 reparseTrackForBwsTags(finalTrackIndex, track, trackName);
                 
                 // Update LED after track name changes
@@ -106,11 +109,11 @@ public class BwsTrackDiscoveryService {
         });
         
         initialized = true;
-        host.println("BwsTrackDiscoveryService: Initialization complete");
+        DebugLogger.common(host, padConfigManager, "BwsTrackDiscoveryService: Initialization complete");
         
         // Delay initial discovery to allow TrackBank to populate
         host.scheduleTask(() -> {
-            host.println("BwsTrackDiscoveryService: Starting delayed initial discovery...");
+            DebugLogger.common(host, padConfigManager, "BwsTrackDiscoveryService: Starting delayed initial discovery...");
             performInitialDiscovery();
         }, 2000); // 2 second delay
     }
@@ -119,7 +122,7 @@ public class BwsTrackDiscoveryService {
      * Performs initial discovery of all existing BWS tracks.
      */
     private void performInitialDiscovery() {
-        host.println("BwsTrackDiscoveryService: Performing initial BWS track discovery...");
+        DebugLogger.common(host, padConfigManager, "BwsTrackDiscoveryService: Performing initial BWS track discovery...");
         
         int existingTracks = 0;
         int totalTracks = 0;
@@ -131,7 +134,7 @@ public class BwsTrackDiscoveryService {
             boolean trackExists = track.exists().get();
             String trackName = track.name().get();
             
-            host.println(String.format("BWS Discovery: Scanning track %d - exists: %s, name: \"%s\"", 
+            DebugLogger.common(host, padConfigManager, String.format("BWS Discovery: Scanning track %d - exists: %s, name: \"%s\"", 
                 trackIndex, trackExists, trackName));
             
             if (trackExists) {
@@ -139,12 +142,12 @@ public class BwsTrackDiscoveryService {
                 if (!trackName.isEmpty()) {
                     reparseTrackForBwsTags(trackIndex, track, trackName);
                 } else {
-                    host.println(String.format("BWS Discovery: Track %d exists but has empty name", trackIndex));
+                    DebugLogger.common(host, padConfigManager, String.format("BWS Discovery: Track %d exists but has empty name", trackIndex));
                 }
             }
         }
         
-        host.println(String.format("BWS Discovery: Scanned %d tracks, %d exist, processing complete", 
+        DebugLogger.common(host, padConfigManager, String.format("BWS Discovery: Scanned %d tracks, %d exist, processing complete", 
             totalTracks, existingTracks));
         logDiscoveryResults();
         
@@ -180,7 +183,7 @@ public class BwsTrackDiscoveryService {
                 trackToBwsSlot.put(track, bwsSlot);  // Reverse mapping for selection detection
                 discoveredBwsTracks = bwsTrackReferences.size();
                 
-                host.println(String.format("BWS Discovery: Found %s at position %d: \"%s\"", 
+                DebugLogger.common(host, padConfigManager, String.format("BWS Discovery: Found %s at position %d: \"%s\"", 
                     bwsTag, trackIndex, trackName));
                 
                 break; // Each track can only have one BWS slot
@@ -188,7 +191,7 @@ public class BwsTrackDiscoveryService {
         }
         
         // Debug: Log all track names being checked
-        host.println(String.format("BWS Discovery: Checking track %d: \"%s\" (exists: %s)", 
+        DebugLogger.common(host, padConfigManager, String.format("BWS Discovery: Checking track %d: \"%s\" (exists: %s)", 
             trackIndex, trackName, track.exists().get()));
     }
     
@@ -233,12 +236,12 @@ public class BwsTrackDiscoveryService {
      */
     public boolean cycleToNextBwsTrack() {
         if (!initialized) {
-            host.println("BwsTrackDiscoveryService: Not initialized, cannot cycle tracks");
+            DebugLogger.common(host, padConfigManager, "BwsTrackDiscoveryService: Not initialized, cannot cycle tracks");
             return false;
         }
         
         if (discoveredBwsTracks == 0) {
-            host.println("BWS Cycle: No BWS tracks found in project");
+            DebugLogger.perf(host, padConfigManager, "BWS Cycle: No BWS tracks found in project");
             return false;
         }
         
@@ -254,7 +257,7 @@ public class BwsTrackDiscoveryService {
                 String trackName = bwsTrack.name().get();
                 Integer trackPosition = bwsTrackPositions.get(currentBwsSlot);
                 
-                host.println(String.format("BWS Cycle: Navigated to BWS:%d (position %d) - \"%s\"", 
+                DebugLogger.perf(host, padConfigManager, String.format("BWS Cycle: Navigated to BWS:%d (position %d) - \"%s\"", 
                     currentBwsSlot, trackPosition != null ? trackPosition : -1, trackName));
                 
                 // Advance to next BWS slot for next cycle
@@ -268,7 +271,7 @@ public class BwsTrackDiscoveryService {
             currentBwsSlot = (currentBwsSlot + 1) % BWS_SLOT_COUNT;
         }
         
-        host.println("BWS Cycle: No valid BWS tracks found (all references invalid)");
+        DebugLogger.perf(host, padConfigManager, "BWS Cycle: No valid BWS tracks found (all references invalid)");
         return false;
     }
     
@@ -318,8 +321,8 @@ public class BwsTrackDiscoveryService {
      * Logs current BWS discovery results to console.
      */
     private void logDiscoveryResults() {
-        host.println("=== BWS Track Discovery Results ===");
-        host.println("Discovered " + discoveredBwsTracks + " BWS tracks:");
+        DebugLogger.common(host, padConfigManager, "=== BWS Track Discovery Results ===");
+        DebugLogger.common(host, padConfigManager, "Discovered " + discoveredBwsTracks + " BWS tracks:");
         
         for (int bwsSlot = 0; bwsSlot < BWS_SLOT_COUNT; bwsSlot++) {
             Track bwsTrack = bwsTrackReferences.get(bwsSlot);
@@ -327,15 +330,15 @@ public class BwsTrackDiscoveryService {
             
             if (bwsTrack != null && position != null) {
                 String trackName = bwsTrack.name().get();
-                host.println(String.format("  BWS:%d → Position %d: \"%s\"", bwsSlot, position, trackName));
+                DebugLogger.common(host, padConfigManager, String.format("  BWS:%d → Position %d: \"%s\"", bwsSlot, position, trackName));
             }
         }
         
         if (discoveredBwsTracks == 0) {
-            host.println("  No BWS tracks found. Add <BWS:0> to <BWS:5> tags to track names for navigation.");
+            DebugLogger.common(host, padConfigManager, "  No BWS tracks found. Add <BWS:0> to <BWS:5> tags to track names for navigation.");
         }
         
-        host.println("=== End BWS Discovery Results ===");
+        DebugLogger.common(host, padConfigManager, "=== End BWS Discovery Results ===");
     }
     
     /**
@@ -343,7 +346,7 @@ public class BwsTrackDiscoveryService {
      * Useful for debugging or if manual refresh is needed.
      */
     public void rediscoverBwsTracks() {
-        host.println("BwsTrackDiscoveryService: Manual rediscovery requested");
+        DebugLogger.common(host, padConfigManager, "BwsTrackDiscoveryService: Manual rediscovery requested");
         
         // Clear existing mapping
         bwsTrackReferences.clear();
@@ -388,11 +391,11 @@ public class BwsTrackDiscoveryService {
         
         if (bwsSlot != null) {
             // Current track is a BWS track - show corresponding LED state
-            host.println(String.format("BWS LED: Currently selected BWS:%d track (\"%s\")", bwsSlot, currentTrackName));
+            DebugLogger.perf(host, padConfigManager, String.format("BWS LED: Currently selected BWS:%d track (\"%s\")", bwsSlot, currentTrackName));
             ledUpdateCallback.updateBwsLed(bwsSlot);
         } else {
             // Current track is not a BWS track - show blinking green
-            host.println(String.format("BWS LED: Currently selected non-BWS track (\"%s\") - showing green blink", currentTrackName));
+            DebugLogger.perf(host, padConfigManager, String.format("BWS LED: Currently selected non-BWS track (\"%s\") - showing green blink", currentTrackName));
             ledUpdateCallback.updateBwsLed(-2); // Special value for non-BWS track
         }
     }

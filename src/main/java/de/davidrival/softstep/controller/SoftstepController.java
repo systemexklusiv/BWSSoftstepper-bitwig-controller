@@ -4,6 +4,7 @@ import com.bitwig.extension.api.util.midi.ShortMidiMessage;
 import com.bitwig.extension.controller.api.ControllerHost;
 import de.davidrival.softstep.api.ApiManager;
 import de.davidrival.softstep.api.BaseConsolePrinter;
+import de.davidrival.softstep.debug.DebugLogger;
 import de.davidrival.softstep.hardware.SoftstepHardware;
 
 import de.davidrival.softstep.hardware.SoftstepHardwareBase;
@@ -33,6 +34,8 @@ public class SoftstepController extends BaseConsolePrinter {
     private ControllerHost controllerHost;
 
     private ControllerPages pages;
+    
+    private PadConfigurationManager padConfigManager;
 
     private List<HasControllsForPage> hasControllsForPages;
 
@@ -45,7 +48,8 @@ public class SoftstepController extends BaseConsolePrinter {
         super(hostOrNull);
         this.pages = controllerPages;
         this.softstepHardware = softstepHardware;
-        this.apiManager = new ApiManager(hostOrNull, this);
+        this.padConfigManager = padConfigManager;
+        this.apiManager = new ApiManager(hostOrNull, this, padConfigManager);
 
         this.controls = new Controls(apiManager.getHost());
 
@@ -194,11 +198,11 @@ public class SoftstepController extends BaseConsolePrinter {
                 softstepHardware.drawLedAt(index, ledStates);
                 
                 // Debug logging
-                p(String.format("PERF Mode LED Update: Pad %d from %s page with state %s", 
+                DebugLogger.perf(getHost(), padConfigManager, String.format("PERF Mode LED Update: Pad %d from %s page with state %s", 
                     index, page.toString(), ledStates.toString()));
             } else {
                 // Debug logging for blocked updates
-                p(String.format("PERF Mode LED BLOCKED: Pad %d from %s page (assigned to different subsystem)", 
+                DebugLogger.perf(getHost(), padConfigManager, String.format("PERF Mode LED BLOCKED: Pad %d from %s page (assigned to different subsystem)", 
                     index, page.toString()));
             }
         }

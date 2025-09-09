@@ -106,8 +106,11 @@ public class PerfConsolePrinter extends BaseConsolePrinter implements HasControl
             int padIndex = pad.getNumber();
             Gestures gestures = pad.gestures();
             
-            DebugLogger.perf(apiManager.getHost(), padConfigManager, String.format("PERF Mode: Processing TRACK_CYCLE PAD%d (pressure: %d, footOn: %s, footOff: %s)", 
-                padIndex, gestures.getPressure(), gestures.isFootOn(), gestures.isFootOff()));
+            // Only log when there's actual pad activity (not idle state)
+            if (gestures.getPressure() > 0 || gestures.isFootOn() || gestures.isFootOff()) {
+                DebugLogger.perf(apiManager.getHost(), padConfigManager, String.format("PERF Mode: Processing TRACK_CYCLE PAD%d (pressure: %d, footOn: %s, footOff: %s)", 
+                    padIndex, gestures.getPressure(), gestures.isFootOn(), gestures.isFootOff()));
+            }
             
             // Only cycle on pad press (not release)
             if (gestures.isFootOn()) {

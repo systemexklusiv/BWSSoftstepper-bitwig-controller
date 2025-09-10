@@ -54,11 +54,15 @@ public class ClipControls extends BaseConsolePrinter implements HasControllsForP
                 if (isRecording) {
                     // Recording clip - RED
                     apiManager.getHost().println("ClipControls: Setting slot " + i + " to RECORDING (RED)");
-                    apiManager.getSoftstepController().updateLedStatesForPerfMode(Page.CLIP, i, Page.CLIP.on);
+                    apiManager.getSoftstepController().updateLedStatesForPerfMode(Page.CLIP, i, 
+                        new LedStates(LedColor.RED, LedLight.ON));
                 } else if (isPlaying) {
                     // Playing clip - GREEN 
                     apiManager.getHost().println("ClipControls: Setting slot " + i + " to PLAYING (GREEN)");
-                    apiManager.getSoftstepController().updateLedStatesForPerfMode(Page.CLIP, i, Page.CLIP.on);
+                    apiManager.getHost().println("*** ClipControls: About to call updateLedStatesForPerfMode(Page.CLIP, " + i + ", GREEN_ON)");
+                    apiManager.getSoftstepController().updateLedStatesForPerfMode(Page.CLIP, i, 
+                        new LedStates(LedColor.GREEN, LedLight.ON));
+                    apiManager.getHost().println("*** ClipControls: updateLedStatesForPerfMode call completed");
                 } else {
                     // Clip exists but not playing - YELLOW
                     apiManager.getHost().println("ClipControls: Setting slot " + i + " to HAS_CONTENT (YELLOW)");

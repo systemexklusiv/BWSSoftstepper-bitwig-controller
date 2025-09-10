@@ -226,23 +226,55 @@ public class SoftstepController extends BaseConsolePrinter {
         // Store LED state in the original page system (for mode switching)
         pages.distributeLedStates(page, index, ledStates);
         
+        // DEBUG: Log method entry and current page state
+        Page currentPage = pages.getCurrentPage();
+        apiManager.getHost().println(String.format("*** DEBUG: updateLedStatesForPerfMode called - page:%s, index:%d, currentPage:%s, ledStates:%s", 
+            page.toString(), index, currentPage.toString(), ledStates.toString()));
+        DebugLogger.perf(getHost(), padConfigManager, String.format("DEBUG: updateLedStatesForPerfMode called - page:%s, index:%d, currentPage:%s, ledStates:%s", 
+            page.toString(), index, currentPage.toString(), ledStates.toString()));
+        
         // If we're currently in PERF mode, check if this pad assignment is valid
-        if (pages.getCurrentPage().equals(Page.PERF)) {
-            if (shouldRenderLedInPerfMode(page, index)) {
-                softstepHardware.drawLedAt(index, ledStates);
+        try {
+            apiManager.getHost().println("*** DEBUG: About to check if currentPage equals PERF");
+            if (pages.getCurrentPage().equals(Page.PERF)) {
+                apiManager.getHost().println("*** DEBUG: In PERF mode branch, checking shouldRenderLedInPerfMode(" + page.toString() + ", " + index + ")");
+                DebugLogger.perf(getHost(), padConfigManager, String.format("DEBUG: In PERF mode branch, checking shouldRenderLedInPerfMode(%s, %d)", page.toString(), index));
                 
-                // Debug logging
-                DebugLogger.perf(getHost(), padConfigManager, String.format("PERF Mode LED Update: Pad %d from %s page with state %s", 
-                    index, page.toString(), ledStates.toString()));
+                boolean shouldRender = shouldRenderLedInPerfMode(page, index);
+                apiManager.getHost().println("*** DEBUG: shouldRenderLedInPerfMode returned: " + shouldRender);
+                
+                if (shouldRender) {
+                    apiManager.getHost().println("*** DEBUG: About to call drawLedAt");
+                    DebugLogger.perf(getHost(), padConfigManager, String.format("DEBUG: shouldRenderLedInPerfMode returned TRUE, calling drawLedAt"));
+                    softstepHardware.drawLedAt(index, ledStates);
+                    apiManager.getHost().println("*** DEBUG: drawLedAt completed successfully");
+                    
+                    // Debug logging
+                    DebugLogger.perf(getHost(), padConfigManager, String.format("PERF Mode LED Update: Pad %d from %s page with state %s", 
+                        index, page.toString(), ledStates.toString()));
+                } else {
+                    apiManager.getHost().println("*** DEBUG: LED update BLOCKED");
+                    // Debug logging for blocked updates
+                    DebugLogger.perf(getHost(), padConfigManager, String.format("PERF Mode LED BLOCKED: Pad %d from %s page (assigned to different subsystem)", 
+                        index, page.toString()));
+                }
             } else {
-                // Debug logging for blocked updates
-                DebugLogger.perf(getHost(), padConfigManager, String.format("PERF Mode LED BLOCKED: Pad %d from %s page (assigned to different subsystem)", 
-                    index, page.toString()));
+                apiManager.getHost().println("*** DEBUG: Not in PERF mode, currentPage is: " + pages.getCurrentPage().toString());
             }
+        } catch (Exception e) {
+            apiManager.getHost().println("*** DEBUG: Exception in PERF mode branch: " + e.getMessage());
+            e.printStackTrace();
         }
+        
         // If not in PERF mode, fall back to normal behavior
-        else if (pages.getCurrentPage().equals(page)) {
+        if (pages.getCurrentPage().equals(page)) {
+            apiManager.getHost().println("*** DEBUG: In fallback branch, calling drawLedAt directly");
+            DebugLogger.perf(getHost(), padConfigManager, String.format("DEBUG: In fallback branch, calling drawLedAt directly"));
             softstepHardware.drawLedAt(index, ledStates);
+        } else if (!pages.getCurrentPage().equals(Page.PERF)) {
+            apiManager.getHost().println("*** DEBUG: No LED update - currentPage:" + currentPage.toString() + " != page:" + page.toString() + " and currentPage != PERF");
+            DebugLogger.perf(getHost(), padConfigManager, String.format("DEBUG: No LED update - currentPage:%s != page:%s and currentPage != PERF", 
+                currentPage.toString(), page.toString()));
         }
     }
     

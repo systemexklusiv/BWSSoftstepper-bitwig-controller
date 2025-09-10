@@ -62,6 +62,9 @@ public class PerfConsolePrinter extends BaseConsolePrinter implements HasControl
         // PERF mode is hybrid of CLIP and USER - refresh both
         clipControls.refreshLedStates();
         userControls.refreshLedStates();
+        
+        // Also refresh BWS track cycle LED (pad 4)
+        refreshBwsLed();
     }
     
     @Override
@@ -214,6 +217,24 @@ public class PerfConsolePrinter extends BaseConsolePrinter implements HasControl
                 updateTrackCycleLed(TRACK_CYCLE_PAD, currentSlot);
             }
         }, 3000); // 3 second delay to ensure BWS discovery is complete
+    }
+    
+    /**
+     * Refreshes the BWS track cycle LED (pad 4) immediately.
+     * Used during mode switching to ensure LED reflects current BWS state.
+     */
+    private void refreshBwsLed() {
+        BwsTrackDiscoveryService bwsService = apiManager.getBwsTrackDiscoveryService();
+        
+        if (bwsService != null && bwsService.isInitialized()) {
+            int currentSlot = bwsService.getCurrentBwsSlot();
+            apiManager.getHost().println(String.format("PERF Mode: Refreshing BWS LED - current slot: %d", currentSlot));
+            updateTrackCycleLed(TRACK_CYCLE_PAD, currentSlot);
+        } else {
+            // BWS service not initialized - show inactive state
+            apiManager.getHost().println("PERF Mode: BWS service not initialized - showing inactive LED");
+            updateTrackCycleLed(TRACK_CYCLE_PAD, -1);
+        }
     }
     
     /**

@@ -51,6 +51,11 @@ public class SoftstepHardwareBase {
         setLed(index
                 , ledStates.ledColor.data2ForLed
                 , ledStates.ledFlashing.data2ForLed);
+        
+        // Debug: Log the actual hardware LED command being sent
+        System.out.println(String.format("*** HARDWARE: drawLedAt(index=%d, color=%s, mode=%s) -> setLed(%d, %d, %d)", 
+            index, ledStates.ledColor.name(), ledStates.ledFlashing.name(),
+            index, ledStates.ledColor.data2ForLed, ledStates.ledFlashing.data2ForLed));
     }
 
     /** use for quick led flipping but may cause issues */

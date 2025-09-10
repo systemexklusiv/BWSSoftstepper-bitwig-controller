@@ -57,14 +57,22 @@ public class SoftstepController extends BaseConsolePrinter {
         HasControllsForPage clipControlls = new ClipControls(Page.CLIP, apiManager);
         HasControllsForPage userControlls = new UserControlls(Page.USER, apiManager, padConfigManager);
         HasControllsForPage perfPage = new PerfConsolePrinter(Page.PERF, apiManager, padConfigManager);
+        HasControllsForPage perf2Page = new Perf2ConsolePrinter(Page.PERF2, apiManager, padConfigManager);
         hasControllsForPages.add(clipControlls);
         hasControllsForPages.add(userControlls);
         hasControllsForPages.add(perfPage);
+        hasControllsForPages.add(perf2Page);
 
     }
 
     public void display() {
-        softstepHardware.displayText(pages.getCurrentPage().name());
+        // Get display text - handle PERF2 special case for 4-character limit
+        String displayText = pages.getCurrentPage().name();
+        if (displayText.equals("PERF2")) {
+            displayText = "PRF2";  // Shorten to fit 4-character hardware display
+        }
+        
+        softstepHardware.displayText(displayText);
         softstepHardware.showAllLeds(pages.getCurrentPage());
     }
 
@@ -140,11 +148,13 @@ public class SoftstepController extends BaseConsolePrinter {
     }
     
     private void cyclePage() {
-        // Cycle through all three available pages: CLIP → USER → PERF → CLIP
+        // Cycle through all four available pages: CLIP → USER → PERF → PERF2 → CLIP
         if (pages.getCurrentPage().equals(Page.CLIP)) {
             pages.setCurrentPage(Page.USER);
         } else if (pages.getCurrentPage().equals(Page.USER)) {
             pages.setCurrentPage(Page.PERF);
+        } else if (pages.getCurrentPage().equals(Page.PERF)) {
+            pages.setCurrentPage(Page.PERF2);
         } else {
             pages.setCurrentPage(Page.CLIP);
         }

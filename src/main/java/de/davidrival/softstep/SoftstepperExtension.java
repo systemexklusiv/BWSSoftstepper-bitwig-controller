@@ -45,7 +45,7 @@ public class SoftstepperExtension extends ControllerExtension
 
       SoftstepHardware softstepHardware = new SoftstepHardware(midiOut);
 
-      ControllerPages controllerPages = new ControllerPages(Page.PERF);
+      ControllerPages controllerPages = new ControllerPages(Page.PERF2);
       softstepController = new SoftstepController(controllerPages
               , softstepHardware
               , host

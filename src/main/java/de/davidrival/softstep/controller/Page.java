@@ -62,6 +62,29 @@ public enum Page {
                 new LedStates(LedColor.GREEN, LedLight.ON),    // Pad 8
                 new LedStates(LedColor.GREEN, LedLight.ON)     // Pad 9
             ))
+    ),
+    
+    PERF2(3
+            , new LedStates(LedColor.YELLOW, LedLight.BLINK)  // Distinctive on state for PERF2
+            , new LedStates(LedColor.YELLOW, LedLight.OFF)
+            , new ArrayList<>(Arrays.asList(
+                // Pad 0: Focused Clip Slot (OFF by default - will be dynamically updated)
+                new LedStates(LedColor.YELLOW, LedLight.OFF),  // Pad 0 - Focused clip slot
+                // Pad 1: Smart Recording Assistant (GREEN by default - ready to record)
+                new LedStates(LedColor.GREEN, LedLight.ON),    // Pad 1 - Smart assistant
+                // Pads 2-3: USER mode colors (freed up from clip slots)
+                new LedStates(LedColor.GREEN, LedLight.ON),    // Pad 2 - USER mode
+                new LedStates(LedColor.GREEN, LedLight.ON),    // Pad 3 - USER mode
+                // Pad 4: BWS Track Cycle (same as PERF mode)
+                new LedStates(LedColor.GREEN, LedLight.ON),    // Pad 4 - BWS track cycle
+                // Pad 5: Track controls (same as PERF mode)
+                new LedStates(LedColor.GREEN, LedLight.OFF),   // Pad 5 - Track control
+                // Pads 6-9: USER mode colors (same as PERF mode)
+                new LedStates(LedColor.GREEN, LedLight.ON),    // Pad 6 - USER mode
+                new LedStates(LedColor.GREEN, LedLight.ON),    // Pad 7 - USER mode
+                new LedStates(LedColor.GREEN, LedLight.ON),    // Pad 8 - USER mode
+                new LedStates(LedColor.GREEN, LedLight.ON)     // Pad 9 - USER mode
+            ))
     );
 
     public final int pageIndex;
@@ -130,6 +153,21 @@ public enum Page {
         public static final LedStates BWS_TRACK_5 = new LedStates(LedColor.RED, LedLight.FAST_BLINK);    // BWS:5 - Red fast blink
         public static final LedStates BWS_INACTIVE = new LedStates(LedColor.GREEN, LedLight.OFF);        // No BWS tracks available
         public static final LedStates BWS_NON_BWS_TRACK = new LedStates(LedColor.GREEN, LedLight.BLINK); // Non-BWS track selected
+    }
+    
+    public static class PERF2_LED_STATES {
+        // Smart Recording Assistant (Pad1) - Context-aware LED states
+        public static final LedStates SMART_READY_TO_RECORD = new LedStates(LedColor.GREEN, LedLight.ON);        // Ready to start recording (when Pad0 empty)
+        public static final LedStates SMART_UNDO_AVAILABLE = new LedStates(LedColor.RED, LedLight.BLINK);        // Undo recording available (when recording)
+        public static final LedStates SMART_AUTO_ADVANCE = new LedStates(LedColor.GREEN, LedLight.BLINK);        // Auto-advance ready (when playing)
+        public static final LedStates SMART_SCENE_CREATION = new LedStates(LedColor.GREEN, LedLight.FAST_BLINK); // Scene creation mode (no free slots)
+        
+        // Focused Clip Slot (Pad0) - Uses standard CLIP LED states but only shows current cursor position
+        // These reference the existing CLIP_LED_STATES for consistency
+        public static final LedStates FOCUSED_EMPTY = Page.CLIP_LED_STATES.OFF;     // Empty slot - OFF
+        public static final LedStates FOCUSED_RECORDING = Page.CLIP_LED_STATES.REC; // Recording - RED + BLINK  
+        public static final LedStates FOCUSED_PLAYING = Page.CLIP_LED_STATES.PLAY;  // Playing - GREEN (corrected)
+        public static final LedStates FOCUSED_STOPPED = Page.CLIP_LED_STATES.STOP;  // Has content but stopped - YELLOW (corrected)
     }
 
     public static class PAD_INDICES {

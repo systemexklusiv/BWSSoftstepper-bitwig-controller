@@ -52,6 +52,7 @@ public class PadConfigurationManager {
     // Debug Control Settings
     private final SettableBooleanValue debugCommonSetting;
     private final SettableBooleanValue debugPerfSetting;
+    private final SettableBooleanValue debugPerf2Setting;
     private final SettableBooleanValue debugUserSetting;
     private final SettableBooleanValue debugClipSetting;
     
@@ -70,12 +71,14 @@ public class PadConfigurationManager {
         Preferences preferences = host.getPreferences();
         this.debugCommonSetting = preferences.getBooleanSetting("Debug Common", "Debug Settings", false);
         this.debugPerfSetting = preferences.getBooleanSetting("Debug PERF Mode", "Debug Settings", false);
+        this.debugPerf2Setting = preferences.getBooleanSetting("Debug PERF2 Mode", "Debug Settings", false);
         this.debugUserSetting = preferences.getBooleanSetting("Debug USER Mode", "Debug Settings", false);
         this.debugClipSetting = preferences.getBooleanSetting("Debug CLIP Mode", "Debug Settings", false);
         
         // Mark debug settings as interested
         debugCommonSetting.markInterested();
         debugPerfSetting.markInterested();
+        debugPerf2Setting.markInterested();
         debugUserSetting.markInterested();
         debugClipSetting.markInterested();
         
@@ -295,6 +298,10 @@ public class PadConfigurationManager {
     
     public boolean isDebugPerf() {
         return debugPerfSetting.get();
+    }
+    
+    public boolean isDebugPerf2() {
+        return debugPerf2Setting.get();
     }
     
     public boolean isDebugUser() {

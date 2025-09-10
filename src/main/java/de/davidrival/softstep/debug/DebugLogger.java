@@ -47,6 +47,19 @@ public class DebugLogger {
     }
     
     /**
+     * Logs a PERF2 mode message if DEBUG_PERF2 is enabled.
+     * 
+     * @param host The controller host for logging
+     * @param padConfigManager The configuration manager containing debug flags
+     * @param message The debug message to log
+     */
+    public static void perf2(ControllerHost host, PadConfigurationManager padConfigManager, String message) {
+        if (padConfigManager != null && padConfigManager.isDebugPerf2()) {
+            host.println("[DEBUG_PERF2] " + message);
+        }
+    }
+    
+    /**
      * Logs a USER mode message if DEBUG_USER is enabled.
      * 
      * @param host The controller host for logging
@@ -97,6 +110,20 @@ public class DebugLogger {
     public static void perff(ControllerHost host, PadConfigurationManager padConfigManager, String format, Object... args) {
         if (padConfigManager != null && padConfigManager.isDebugPerf()) {
             host.println("[DEBUG_PERF] " + String.format(format, args));
+        }
+    }
+    
+    /**
+     * Logs a message with printf-style formatting if DEBUG_PERF2 is enabled.
+     * 
+     * @param host The controller host for logging
+     * @param padConfigManager The configuration manager containing debug flags
+     * @param format The format string
+     * @param args The arguments for formatting
+     */
+    public static void perf2f(ControllerHost host, PadConfigurationManager padConfigManager, String format, Object... args) {
+        if (padConfigManager != null && padConfigManager.isDebugPerf2()) {
+            host.println("[DEBUG_PERF2] " + String.format(format, args));
         }
     }
     

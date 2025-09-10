@@ -86,6 +86,44 @@ public class UserControlls extends BaseConsolePrinter implements HasControllsFor
     public Page getPage() {
         return this.page;
     }
+    
+    @Override
+    public void refreshLedStates() {
+        // Refresh USER mode LED states based on current control values and modes
+        for (int padIndex = 0; padIndex < 10; padIndex++) {
+            PadConfigurationManager.PadConfig config = padConfigManager.getPadConfig(padIndex);
+            LedStates ledState = calculateLedStateForPad(padIndex, config);
+            apiManager.getSoftstepController().updateLedStatesForPerfMode(Page.USER, padIndex, ledState);
+        }
+    }
+    
+    /**
+     * Calculate the current LED state for a pad based on its configuration and current values.
+     */
+    private LedStates calculateLedStateForPad(int padIndex, PadConfigurationManager.PadConfig config) {
+        switch (config.mode) {
+            case TOGGLE:
+                return toggleStates[padIndex] ? Page.USER_LED_STATES.TOGGLE_ON : Page.USER_LED_STATES.TOGGLE_OFF;
+            case MOMENTARY:
+                // For refresh, momentary pads should show as released (we're not currently pressing them)
+                return Page.USER_LED_STATES.MOMENTARY_RELEASED;
+            case PRESSURE:
+                // For refresh, show pressure pads as released (current pressure values would require hardware state)
+                return Page.USER_LED_STATES.PRESSURE_RELEASED;
+            case INCREMENT:
+                int currentValue = incrementValues[padIndex];
+                int nextValue = currentValue + (int) config.stepSize;
+                if (currentValue <= config.min) {
+                    return Page.USER_LED_STATES.INCREMENT_MIN;
+                } else if (nextValue > config.max) {
+                    return Page.USER_LED_STATES.INCREMENT_MAX;  // Next will wrap
+                } else {
+                    return Page.USER_LED_STATES.INCREMENT_MID;  // Safe to increment
+                }
+            default:
+                return Page.USER_LED_STATES.DISABLED;
+        }
+    }
 
     @Override
     public void processControlls(List<Softstep1Pad> pushedDownPads, ShortMidiMessage msg) {

@@ -102,6 +102,16 @@ public class Perf2ConsolePrinter extends BaseConsolePrinter implements HasContro
     }
     
     @Override
+    public void refreshLedStates() {
+        // Refresh LED states when switching to PERF2 mode
+        updateFocusedClipLed();
+        updateSmartAssistantLed();
+        
+        DebugLogger.perf2(apiManager.getHost(), padConfigManager, 
+            "PERF2: LED states refreshed on mode switch");
+    }
+    
+    @Override
     public void processControlls(List<Softstep1Pad> pushedDownPads, ShortMidiMessage msg) {
         DebugLogger.perf2(apiManager.getHost(), padConfigManager, String.format("PERF2: Processing %d pads", pushedDownPads.size()));
         

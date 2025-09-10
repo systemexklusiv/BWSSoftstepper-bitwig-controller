@@ -158,8 +158,32 @@ public class SoftstepController extends BaseConsolePrinter {
         } else {
             pages.setCurrentPage(Page.CLIP);
         }
+        
+        // Refresh LED states for the new mode to ensure they reflect current state
+        refreshLedsForCurrentMode();
+        
         display();
     }
+    
+    /**
+     * Refreshes LED states when switching to a new mode.
+     * This ensures LEDs reflect the current state of clips/controls.
+     */
+    private void refreshLedsForCurrentMode() {
+        Page currentPage = pages.getCurrentPage();
+        
+        apiManager.getHost().println("SoftstepController: Refreshing LED states for mode: " + currentPage.name());
+        
+        // Find the controller for the current page and refresh its LED states
+        for (HasControllsForPage controller : hasControllsForPages) {
+            if (controller.getPage().equals(currentPage)) {
+                apiManager.getHost().println("SoftstepController: Found controller for " + currentPage.name() + ", calling refreshLedStates()");
+                controller.refreshLedStates();
+                break;
+            }
+        }
+    }
+    
 
 
     /**

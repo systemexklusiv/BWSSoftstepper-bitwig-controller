@@ -1,8 +1,12 @@
 package de.davidrival.softstep.controller;
 
 import com.bitwig.extension.api.util.midi.ShortMidiMessage;
+import com.bitwig.extension.controller.api.ClipLauncherSlot;
+import com.bitwig.extension.controller.api.ClipLauncherSlotBank;
 import de.davidrival.softstep.api.ApiManager;
 import de.davidrival.softstep.api.BaseConsolePrinter;
+import de.davidrival.softstep.hardware.LedColor;
+import de.davidrival.softstep.hardware.LedLight;
 
 import java.util.List;
 import java.util.function.Predicate;
@@ -24,6 +28,51 @@ public class ClipControls extends BaseConsolePrinter implements HasControllsForP
     @Override
     public Page getPage() {
         return this.page;
+    }
+    
+    @Override
+    public void refreshLedStates() {
+        // Force refresh of clip LED states by manually querying current clip states
+        // This is needed when switching to CLIP mode to show current clip states
+        ClipLauncherSlotBank slotBank = apiManager.getSlotBank();
+        int bankSize = slotBank.getSizeOfBank();
+        
+        apiManager.getHost().println("ClipControls: refreshLedStates() called - bank size: " + bankSize);
+        
+        for (int i = 0; i < Math.min(bankSize, 4); i++) { // Only update first 4 clip slots
+            ClipLauncherSlot slot = slotBank.getItemAt(i);
+            
+            boolean hasContent = slot.hasContent().get();
+            boolean isRecording = slot.isRecording().get();
+            boolean isPlaying = slot.isPlaying().get();
+            
+            apiManager.getHost().println(String.format("ClipControls: Slot %d - hasContent: %s, isRecording: %s, isPlaying: %s", 
+                i, hasContent, isRecording, isPlaying));
+            
+            // Force update LED based on current clip state
+            if (hasContent) {
+                if (isRecording) {
+                    // Recording clip - RED
+                    apiManager.getHost().println("ClipControls: Setting slot " + i + " to RECORDING (RED)");
+                    apiManager.getSoftstepController().updateLedStatesForPerfMode(Page.CLIP, i, Page.CLIP.on);
+                } else if (isPlaying) {
+                    // Playing clip - GREEN 
+                    apiManager.getHost().println("ClipControls: Setting slot " + i + " to PLAYING (GREEN)");
+                    apiManager.getSoftstepController().updateLedStatesForPerfMode(Page.CLIP, i, Page.CLIP.on);
+                } else {
+                    // Clip exists but not playing - YELLOW
+                    apiManager.getHost().println("ClipControls: Setting slot " + i + " to HAS_CONTENT (YELLOW)");
+                    apiManager.getSoftstepController().updateLedStatesForPerfMode(Page.CLIP, i, 
+                        new LedStates(LedColor.YELLOW, LedLight.ON));
+                }
+            } else {
+                // No clip - OFF
+                apiManager.getHost().println("ClipControls: Setting slot " + i + " to NO_CONTENT (OFF)");
+                apiManager.getSoftstepController().updateLedStatesForPerfMode(Page.CLIP, i, Page.CLIP.off);
+            }
+        }
+        
+        apiManager.getHost().println("ClipControls: refreshLedStates() completed");
     }
 
     private final Predicate<Softstep1Pad> arePadsForNavigation = (

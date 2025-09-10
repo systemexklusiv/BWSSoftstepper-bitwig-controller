@@ -58,6 +58,13 @@ public class PerfConsolePrinter extends BaseConsolePrinter implements HasControl
     }
     
     @Override
+    public void refreshLedStates() {
+        // PERF mode is hybrid of CLIP and USER - refresh both
+        clipControls.refreshLedStates();
+        userControls.refreshLedStates();
+    }
+    
+    @Override
     public void processControlls(List<Softstep1Pad> pushedDownPads, ShortMidiMessage msg) {
         //apiManager.getHost().println(String.format("PerfPage: Processing %d pads", pushedDownPads.size()));
         

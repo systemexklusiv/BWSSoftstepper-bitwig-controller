@@ -61,14 +61,19 @@ public class Perf2ConsolePrinter extends BaseConsolePrinter implements HasContro
         this.apiManager = apiManager;
         this.padConfigManager = padConfigManager;
         
-        // Get Bitwig API objects for clip slot management (use existing from ApiManager)
+        // Get Bitwig API objects for clip slot management
         this.cursorTrack = apiManager.getTrackCurser();
-        this.clipSlotBank = apiManager.getSlotBank();  // Use existing slot bank from ApiManager
+        // PERF2 mode gets the larger clip slot bank for full track access (128+ slots)
+        this.clipSlotBank = apiManager.getPerf2SlotBank();
         this.sceneBank = apiManager.getSceneBank();
         
         // Initialize focused clip slot (first slot by default)
         this.focusedClipSlot = clipSlotBank.getItemAt(currentClipSlotIndex);
         this.lastKnownFocusedSlot = this.focusedClipSlot;
+        
+        // Debug: Log the actual bank size we got
+        DebugLogger.perf2(apiManager.getHost(), padConfigManager, String.format(
+            "PERF2: Initialized with clip slot bank size: %d", clipSlotBank.getSizeOfBank()));
         
         // Create instances of existing functionality for hybrid mode
         this.userControls = new UserControlls(Page.USER, apiManager, padConfigManager);
@@ -343,13 +348,13 @@ public class Perf2ConsolePrinter extends BaseConsolePrinter implements HasContro
     
     /**
      * Advances to the next free clip slot and starts recording.
-     * With full track access, this is now much simpler - no bank scrolling needed.
+     * Uses simple 4-slot cycle recording - when bank is full, clear all and restart from slot 0.
      */
     private void advanceToNextFreeSlotAndRecord() {
         DebugLogger.perf2(apiManager.getHost(), padConfigManager, String.format(
             "PERF2: Advance requested - current clip slot index: %d", currentClipSlotIndex));
         
-        // Search for next free slot in current track (full track scan)
+        // Search for next free slot in 4-slot bank (simple cycle)
         int nextFreeSlotIndex = findNextFreeSlotIndex();
         
         if (nextFreeSlotIndex != -1) {
@@ -361,7 +366,7 @@ public class Perf2ConsolePrinter extends BaseConsolePrinter implements HasContro
             // Update focus to the free slot
             currentClipSlotIndex = nextFreeSlotIndex;
             focusedClipSlot = clipSlotBank.getItemAt(currentClipSlotIndex);
-            lastKnownFocusedSlot = focusedClipSlot;  // Update tracking
+            lastKnownFocusedSlot = focusedClipSlot;
             
             // Start recording in the new slot
             focusedClipSlot.launch();
@@ -369,68 +374,54 @@ public class Perf2ConsolePrinter extends BaseConsolePrinter implements HasContro
             DebugLogger.perf2(apiManager.getHost(), padConfigManager, String.format(
                 "PERF2: Smart Assistant - Advanced to index %d and started recording", nextFreeSlotIndex));
         } else {
-            // No free slots found - try alternative approaches
+            // No free slots found in 4-slot bank - start new cycle
             DebugLogger.perf2(apiManager.getHost(), padConfigManager, 
-                "PERF2: No free slots found after scrolling, trying alternative methods");
+                "PERF2: Bank full - clearing all clips and starting new cycle");
                 
-            // Method 1: Try creating new scene
-            createNewSceneAndRecord();
+            // Clear all clips in current bank (reuse CLIP mode functionality)
+            apiManager.getApiToHost().deleteAllSlots();
             
-            // Method 2: If scene creation fails, try direct cursor track approach
-            if (focusedClipSlot == null || focusedClipSlot.hasContent().get()) {
-                tryDirectCursorTrackRecording();
-            }
+            // Reset to slot 0 and start recording
+            currentClipSlotIndex = 0;
+            focusedClipSlot = clipSlotBank.getItemAt(currentClipSlotIndex);
+            lastKnownFocusedSlot = focusedClipSlot;
+            
+            // Start recording in slot 0
+            focusedClipSlot.launch();
+            
+            DebugLogger.perf2(apiManager.getHost(), padConfigManager, 
+                "PERF2: Cycle restart - cleared bank and started recording in slot 0");
         }
     }
     
     /**
-     * Finds the next free clip slot in the current track.
-     * This method handles bank scrolling carefully to search beyond the current 4-slot window,
-     * but only when actually advancing (not for LED updates).
-     * @return Index of next free slot within current bank view, or -1 if none found
+     * Finds the next free clip slot in the 4-slot bank.
+     * Simple cycle: 0→1→2→3→clear→0→1→2→3...
+     * @return Index of next free slot (0-3), or -1 if bank is full
      */
     private int findNextFreeSlotIndex() {
-        int bankSize = clipSlotBank.getSizeOfBank();
+        int bankSize = clipSlotBank.getSizeOfBank(); // Should be 4
         
         DebugLogger.perf2(apiManager.getHost(), padConfigManager, String.format(
             "PERF2: Searching for free slot from current index %d in bank size %d", currentClipSlotIndex, bankSize));
         
-        // First, search within current bank view
+        // Search from current position forward through the 4-slot bank
         for (int i = currentClipSlotIndex + 1; i < bankSize; i++) {
             ClipLauncherSlot slot = clipSlotBank.getItemAt(i);
             boolean hasContent = slot.hasContent().get();
             
             DebugLogger.perf2(apiManager.getHost(), padConfigManager, String.format(
-                "PERF2: Checking bank slot %d - hasContent: %s", i, hasContent));
+                "PERF2: Checking slot %d/%d - hasContent: %s", i, bankSize, hasContent));
                 
             if (!hasContent) {
                 DebugLogger.perf2(apiManager.getHost(), padConfigManager, String.format(
-                    "PERF2: Found free slot at bank index %d (no scrolling needed)", i));
+                    "PERF2: Found free slot at index %d in 4-slot cycle", i));
                 return i;
             }
         }
         
-        // If no free slots in current bank view, try scrolling multiple times to find more slots
-        int maxScrollAttempts = 10; // Try scrolling up to 10 times to find free slots
-        
-        for (int scrollAttempt = 0; scrollAttempt < maxScrollAttempts; scrollAttempt++) {
-            DebugLogger.perf2(apiManager.getHost(), padConfigManager, String.format(
-                "PERF2: No free slots in current bank view, scrolling forward (attempt %d)", scrollAttempt + 1));
-            clipSlotBank.scrollBy(1);
-            
-            // After each scroll, check all slots in the new view
-            for (int i = 0; i < bankSize; i++) {
-                ClipLauncherSlot slot = clipSlotBank.getItemAt(i);
-                if (!slot.hasContent().get()) {
-                    DebugLogger.perf2(apiManager.getHost(), padConfigManager, String.format(
-                        "PERF2: Found free slot at bank index %d after scrolling %d times", i, scrollAttempt + 1));
-                    return i;
-                }
-            }
-        }
-        
-        DebugLogger.perf2(apiManager.getHost(), padConfigManager, String.format(
-            "PERF2: No free slots found after %d scroll attempts", maxScrollAttempts));
+        DebugLogger.perf2(apiManager.getHost(), padConfigManager, 
+            "PERF2: No free slots found in 4-slot bank - cycle restart needed");
         return -1;
     }
     
@@ -456,243 +447,6 @@ public class Perf2ConsolePrinter extends BaseConsolePrinter implements HasContro
             "PERF2: LED check - No free slots in current bank view");
         return false;
     }
-    
-    /**
-     * Creates multiple new scenes and starts recording in the next available slot.
-     * Pre-creates several scenes for efficiency as you suggested.
-     */
-    private void createNewSceneAndRecord() {
-        try {
-            DebugLogger.perf2(apiManager.getHost(), padConfigManager, 
-                "PERF2: Creating new scenes - pre-creating 4 scenes for efficiency");
-            
-            // Pre-create 4 scenes for better performance (as you suggested)
-            // But first try a different approach - use the cursor track to create clips directly
-            DebugLogger.perf2(apiManager.getHost(), padConfigManager, 
-                "PERF2: Attempting to create new clip slots by expanding track capacity");
-            
-            // Try to make the clip slot bank see more slots by changing its capacity
-            int originalBankSize = clipSlotBank.getSizeOfBank();
-            DebugLogger.perf2(apiManager.getHost(), padConfigManager, String.format(
-                "PERF2: Original bank size: %d", originalBankSize));
-            
-            // Method 1: Try to create scenes first
-            for (int sceneCreate = 0; sceneCreate < 4; sceneCreate++) {
-                sceneBank.scrollBy(1);
-                DebugLogger.perf2(apiManager.getHost(), padConfigManager, String.format(
-                    "PERF2: Created scene %d/4", sceneCreate + 1));
-            }
-            
-            // Method 2: Try to force the clip slot bank to refresh and see new slots
-            // Reset the clip slot bank position to beginning
-            clipSlotBank.scrollPosition().set(0);
-            
-            // Wait a moment for the API to catch up
-            try {
-                Thread.sleep(50); // Brief delay to let API update
-            } catch (InterruptedException e) {
-                // Ignore
-            }
-            
-            // Now try to find empty slots with a more thorough approach
-            DebugLogger.perf2(apiManager.getHost(), padConfigManager, 
-                "PERF2: Scanning for newly available slots after scene creation");
-                
-            int maxScrollForNewSlots = 20; // Try even more positions
-            boolean foundFreeSlot = false;
-            
-            for (int scrollAttempt = 0; scrollAttempt < maxScrollForNewSlots && !foundFreeSlot; scrollAttempt++) {
-                int bankSize = clipSlotBank.getSizeOfBank();
-                DebugLogger.perf2(apiManager.getHost(), padConfigManager, String.format(
-                    "PERF2: Scroll attempt %d, bank size: %d", scrollAttempt + 1, bankSize));
-                
-                // Check all slots in current view
-                for (int i = 0; i < bankSize; i++) {
-                    ClipLauncherSlot slot = clipSlotBank.getItemAt(i);
-                    if (slot != null && !slot.hasContent().get()) {
-                        currentClipSlotIndex = i;
-                        focusedClipSlot = slot;
-                        lastKnownFocusedSlot = slot;
-                        focusedClipSlot.launch();
-                        
-                        DebugLogger.perf2(apiManager.getHost(), padConfigManager, String.format(
-                            "PERF2: SUCCESS! Found empty slot at position %d, index %d and started recording", 
-                            scrollAttempt, i));
-                        foundFreeSlot = true;
-                        return;
-                    }
-                }
-                
-                // Move to next position
-                if (!foundFreeSlot) {
-                    clipSlotBank.scrollBy(1);
-                }
-            }
-            
-            // If still no success, try the alternative approach of creating a clip directly
-            if (!foundFreeSlot) {
-                DebugLogger.perf2(apiManager.getHost(), padConfigManager, 
-                    "PERF2: Scene creation approach failed, trying direct clip creation");
-                createClipDirectlyOnCursorTrack();
-            }
-                
-        } catch (Exception e) {
-            DebugLogger.perf2(apiManager.getHost(), padConfigManager, 
-                "PERF2: Smart Assistant - Failed to create new scenes: " + e.getMessage());
-        }
-    }
-    
-    /**
-     * Direct method to create a new clip on the cursor track.
-     * This bypasses the clip slot bank limitations by using cursor track methods.
-     */
-    private void createClipDirectlyOnCursorTrack() {
-        try {
-            DebugLogger.perf2(apiManager.getHost(), padConfigManager, 
-                "PERF2: Attempting direct clip creation on cursor track");
-            
-            // Ensure the track is armed for recording
-            cursorTrack.arm().set(true);
-            
-            // Try to start recording on cursor track - this should create a new clip
-            // We'll look for a recording clip after starting
-            cursorTrack.selectInMixer();
-            
-            // Get the current play state
-            Transport transport = apiManager.getHost().createTransport();
-            
-            if (!transport.isPlaying().get()) {
-                // If not playing, start playing first
-                transport.play();
-                DebugLogger.perf2(apiManager.getHost(), padConfigManager, 
-                    "PERF2: Started transport for recording");
-            }
-            
-            // Now start recording - this should create a clip on the cursor track
-            transport.record();
-            
-            DebugLogger.perf2(apiManager.getHost(), padConfigManager, 
-                "PERF2: Started direct recording on cursor track");
-            
-            // After a brief delay, try to locate the newly created recording clip
-            new java.util.Timer().schedule(new java.util.TimerTask() {
-                @Override
-                public void run() {
-                    findNewlyCreatedRecordingClip();
-                }
-            }, 200); // 200ms delay to let Bitwig create the clip
-            
-        } catch (Exception e) {
-            DebugLogger.perf2(apiManager.getHost(), padConfigManager, 
-                "PERF2: Direct clip creation failed: " + e.getMessage());
-        }
-    }
-    
-    /**
-     * Searches for a newly created recording clip after direct track recording.
-     */
-    private void findNewlyCreatedRecordingClip() {
-        try {
-            DebugLogger.perf2(apiManager.getHost(), padConfigManager, 
-                "PERF2: Searching for newly created recording clip");
-            
-            // Scan through the clip slot bank to find a recording clip
-            boolean foundRecordingClip = false;
-            int maxSearchPositions = 30; // Search through many positions
-            
-            // Start from current position and search forward
-            for (int pos = 0; pos < maxSearchPositions && !foundRecordingClip; pos++) {
-                int bankSize = clipSlotBank.getSizeOfBank();
-                for (int i = 0; i < bankSize; i++) {
-                    ClipLauncherSlot slot = clipSlotBank.getItemAt(i);
-                    if (slot != null && slot.isRecording().get()) {
-                        // Found the recording clip!
-                        currentClipSlotIndex = i;
-                        focusedClipSlot = slot;
-                        lastKnownFocusedSlot = slot;
-                        
-                        DebugLogger.perf2(apiManager.getHost(), padConfigManager, String.format(
-                            "PERF2: SUCCESS! Found newly created recording clip at position %d, index %d", pos, i));
-                        
-                        // Update LED feedback
-                        updateFocusedClipLed();
-                        updateSmartAssistantLed();
-                        
-                        foundRecordingClip = true;
-                        return;
-                    }
-                }
-                
-                if (!foundRecordingClip && pos < maxSearchPositions - 1) {
-                    clipSlotBank.scrollBy(1);
-                }
-            }
-            
-            if (!foundRecordingClip) {
-                DebugLogger.perf2(apiManager.getHost(), padConfigManager, 
-                    "PERF2: Could not locate newly created recording clip");
-            }
-            
-        } catch (Exception e) {
-            DebugLogger.perf2(apiManager.getHost(), padConfigManager, 
-                "PERF2: Error searching for recording clip: " + e.getMessage());
-        }
-    }
-    
-    /**
-     * Alternative method: Try to find any empty slot and launch it to create a new recording.
-     * This approach tries to work with the existing clip slot structure.
-     */
-    private void tryDirectCursorTrackRecording() {
-        try {
-            DebugLogger.perf2(apiManager.getHost(), padConfigManager, 
-                "PERF2: Trying direct slot launch as fallback");
-            
-            // Ensure track is armed for recording
-            cursorTrack.arm().set(true);
-            
-            // Try to find any empty slot in the bank by scanning more thoroughly
-            int bankSize = clipSlotBank.getSizeOfBank();
-            boolean foundEmptySlot = false;
-            
-            // Try scrolling back to beginning and scanning again
-            clipSlotBank.scrollPosition().set(0);
-            
-            // Scan through multiple positions more thoroughly
-            int maxPositions = 20; // Try 20 different bank positions
-            for (int pos = 0; pos < maxPositions && !foundEmptySlot; pos++) {
-                for (int i = 0; i < bankSize; i++) {
-                    ClipLauncherSlot slot = clipSlotBank.getItemAt(i);
-                    if (slot != null && !slot.hasContent().get()) {
-                        // Found empty slot - launch it to create new recording
-                        currentClipSlotIndex = i;
-                        focusedClipSlot = slot;
-                        lastKnownFocusedSlot = slot;
-                        slot.launch();
-                        
-                        DebugLogger.perf2(apiManager.getHost(), padConfigManager, String.format(
-                            "PERF2: Found and launched empty slot at position %d, index %d", pos, i));
-                        foundEmptySlot = true;
-                        return;
-                    }
-                }
-                
-                if (!foundEmptySlot) {
-                    clipSlotBank.scrollBy(1); // Try next position
-                }
-            }
-            
-            if (!foundEmptySlot) {
-                DebugLogger.perf2(apiManager.getHost(), padConfigManager, 
-                    "PERF2: No empty slots found even after exhaustive search");
-            }
-                
-        } catch (Exception e) {
-            DebugLogger.perf2(apiManager.getHost(), padConfigManager, 
-                "PERF2: Direct slot launch failed: " + e.getMessage());
-        }
-    }
-    
     
     /**
      * Processes BWS Track Cycle pads (same as PERF mode).
@@ -819,7 +573,7 @@ public class Perf2ConsolePrinter extends BaseConsolePrinter implements HasContro
             if (hasNextFreeSlot) {
                 ledState = Page.PERF2_LED_STATES.SMART_AUTO_ADVANCE;      // GREEN + BLINK
             } else {
-                // State 4: Scene creation mode (no free slots)
+                // State 4: Cycle restart mode (no free slots - will clear all and restart)
                 ledState = Page.PERF2_LED_STATES.SMART_SCENE_CREATION;    // GREEN + FAST_BLINK
             }
         } else {

@@ -25,6 +25,10 @@ public class ApiManager {
     public static final boolean SHOW_CLIP_LAUNCHER_FEEDBACK = true;
     public static final int USER_CONTROL_PARAMETER_RESOLUTION = 128;
     public static final int CLIPS_CONTENT_CLEANUP_PERIOD = 3000;
+    
+    // Clip slot bank sizes for different modes
+    public static final int DEFAULT_SLOT_BANK_SIZE = 4;    // CLIP, USER, PERF modes
+    public static final int PERF2_SLOT_BANK_SIZE = 128;    // PERF2 mode full track access
 
     private final CursorTrack trackCurser;
     private final ApiHostToController apiFromHost;
@@ -46,6 +50,9 @@ public class ApiManager {
     private SoftstepController softstepController;
 
     private ControllerHost host;
+    
+    // PERF2-specific larger clip slot bank for full track access
+    private ClipLauncherSlotBank perf2SlotBank;
     
     // BWS Track Discovery Service
     private BwsTrackDiscoveryService bwsTrackDiscoveryService;
@@ -70,7 +77,16 @@ public class ApiManager {
 
         this.trackBank.followCursorTrack(trackCurser);
 
+        // Create default clip slot bank (4-slot window for CLIP, USER, PERF modes)
         this.slotBank = track.clipLauncherSlotBank();
+        
+        // PERF2 mode uses same 4-slot bank for cycle recording workflow
+        // When bank fills up, clear all slots and restart cycle
+        this.perf2SlotBank = this.slotBank;  // Same bank for all modes - simpler and consistent
+        
+        DebugLogger.common(host, null, String.format(
+            "ApiManager: PERF2 cycle recording - using 4-slot bank (size: %d)", 
+            this.perf2SlotBank.getSizeOfBank()));
 
         this.apiFromHost = new ApiHostToController(this);
         this.apiToHost = new ApiControllerToHost(this);
@@ -169,6 +185,39 @@ public class ApiManager {
      */
     public BwsTrackDiscoveryService getBwsTrackDiscoveryService() {
         return bwsTrackDiscoveryService;
+    }
+    
+    /**
+     * Gets the appropriate clip slot bank based on the current page mode.
+     * PERF2 mode gets the larger bank for full track access.
+     * Other modes get the standard 4-slot bank.
+     * 
+     * @return ClipLauncherSlotBank appropriate for current mode
+     */
+    public ClipLauncherSlotBank getSlotBankForCurrentMode() {
+        if (softstepController != null) {
+            Page currentPage = softstepController.getPages().getCurrentPage();
+            if (currentPage == Page.PERF2) {
+                DebugLogger.common(host, null, String.format(
+                    "ApiManager: Returning PERF2 slot bank (size: %d)", 
+                    perf2SlotBank.getSizeOfBank()));
+                return perf2SlotBank;
+            }
+        }
+        
+        DebugLogger.common(host, null, String.format(
+            "ApiManager: Returning default slot bank (size: %d)", 
+            slotBank.getSizeOfBank()));
+        return slotBank;
+    }
+    
+    /**
+     * Gets the PERF2-specific larger clip slot bank.
+     * 
+     * @return ClipLauncherSlotBank with larger capacity for PERF2 mode
+     */
+    public ClipLauncherSlotBank getPerf2SlotBank() {
+        return perf2SlotBank;
     }
 
 }

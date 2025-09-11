@@ -20,6 +20,29 @@ public class ClipControls extends BaseConsolePrinter implements HasControllsForP
         super(apiManager.getHost());
         this.page = page;
         this.apiManager = apiManager;
+        
+        // Mark clip slot values as interested so we can call .get() on them
+        initializeClipSlotObservers();
+    }
+    
+    /**
+     * Initialize clip slot observers by marking necessary values as interested.
+     * This allows us to call .get() on these values in refreshLedStates().
+     */
+    private void initializeClipSlotObservers() {
+        ClipLauncherSlotBank slotBank = apiManager.getSlotBank();
+        int bankSize = slotBank.getSizeOfBank();
+        
+        for (int i = 0; i < Math.min(bankSize, 4); i++) { // Only first 4 clip slots
+            ClipLauncherSlot slot = slotBank.getItemAt(i);
+            
+            // Mark the values we need as interested
+            slot.hasContent().markInterested();
+            slot.isRecording().markInterested();
+            slot.isPlaying().markInterested();
+        }
+        
+        apiManager.getHost().println("ClipControls: Initialized clip slot observers for " + Math.min(bankSize, 4) + " slots");
     }
 
     private final Page page;

@@ -33,20 +33,20 @@ public class SoftstepController extends BaseConsolePrinter {
 
     private ControllerHost controllerHost;
 
-    private ControllerPages pages;
+    private ControlerPages pages;
     
     private PadConfigurationManager padConfigManager;
 
     private List<HasControllsForPage> hasControllsForPages;
 
     public SoftstepController(
-            ControllerPages controllerPages
+            ControlerPages controlerPages
             , SoftstepHardware softstepHardware
             , ControllerHost hostOrNull
             , PadConfigurationManager padConfigManager) {
 
         super(hostOrNull);
-        this.pages = controllerPages;
+        this.pages = controlerPages;
         this.softstepHardware = softstepHardware;
         this.padConfigManager = padConfigManager;
         this.apiManager = new ApiManager(hostOrNull, this, padConfigManager);
@@ -55,9 +55,9 @@ public class SoftstepController extends BaseConsolePrinter {
 
         hasControllsForPages = new ArrayList<>();
         HasControllsForPage clipControlls = new ClipControls(Page.CLIP, apiManager);
-        HasControllsForPage userControlls = new UserControlls(Page.USER, apiManager, padConfigManager);
-        HasControllsForPage perfPage = new PerfConsolePrinter(Page.PERF, apiManager, padConfigManager);
-        HasControllsForPage perf2Page = new Perf2ConsolePrinter(Page.PERF2, apiManager, padConfigManager);
+        HasControllsForPage userControlls = new UserControls(Page.USER, apiManager, padConfigManager);
+        HasControllsForPage perfPage = new PerfControls(Page.PERF, apiManager, padConfigManager);
+        HasControllsForPage perf2Page = new Perf2Controls(Page.PERF2, apiManager, padConfigManager);
         hasControllsForPages.add(clipControlls);
         hasControllsForPages.add(userControlls);
         hasControllsForPages.add(perfPage);
@@ -213,12 +213,13 @@ public class SoftstepController extends BaseConsolePrinter {
     }
     
     /**
-     * Updates LED states for PERF mode, which needs special handling since it's a hybrid mode.
+     * Updates LED states for PERF and PERF2 modes, which need special handling since they're hybrid modes.
      * PERF mode uses CLIP functionality for pads 0-3,5 and USER functionality for pads 4,6-9.
+     * PERF2 mode uses focused clip (0), smart assistant (1), USER (2-3), and upper row like PERF.
      * This method ensures LEDs are updated correctly regardless of which internal page system
      * is calling the update.
      * 
-     * @param page The original page making the LED update call (Page.CLIP or Page.USER)
+     * @param page The original page making the LED update call (Page.CLIP, Page.USER, or Page.PERF2)
      * @param index The pad index (0-9)
      * @param ledStates The LED states to apply
      */
@@ -240,7 +241,21 @@ public class SoftstepController extends BaseConsolePrinter {
                     index, page.toString()));
             }
         }
-        // If not in PERF mode, fall back to normal behavior
+        // If we're currently in PERF2 mode, check if this pad assignment is valid
+        else if (pages.getCurrentPage().equals(Page.PERF2)) {
+            if (shouldRenderLedInPerf2Mode(page, index)) {
+                softstepHardware.drawLedAt(index, ledStates);
+                
+                // Debug logging
+                DebugLogger.perf2(getHost(), padConfigManager, String.format("PERF2 Mode LED Update: Pad %d from %s page with state %s", 
+                    index, page.toString(), ledStates.toString()));
+            } else {
+                // Debug logging for blocked updates
+                DebugLogger.perf2(getHost(), padConfigManager, String.format("PERF2 Mode LED BLOCKED: Pad %d from %s page (assigned to different subsystem)", 
+                    index, page.toString()));
+            }
+        }
+        // If not in PERF or PERF2 mode, fall back to normal behavior
         else if (pages.getCurrentPage().equals(page)) {
             softstepHardware.drawLedAt(index, ledStates);
         }
@@ -269,6 +284,40 @@ public class SoftstepController extends BaseConsolePrinter {
             
             case PERF:
                 // PERF mode can update any pad (for BWS track cycle on pad 4, etc.)
+                return true;
+            
+            default:
+                // Unknown source page - allow for backward compatibility
+                return true;
+        }
+    }
+    
+    /**
+     * Determines if a LED update should be rendered in PERF2 mode based on pad assignments.
+     * PERF2 mode pad assignment:
+     * - Pad 0: Focused Clip (handled by PERF2 mode directly)
+     * - Pad 1: Smart Assistant (handled by PERF2 mode directly) 
+     * - Pads 2-3: USER mode
+     * - Pad 4: TRACK_CYCLE (handled by PERF2 mode directly)
+     * - Pads 5-6: CLIP mode (mute/arm)
+     * - Pads 7-9: USER mode
+     * 
+     * @param sourcePage The page/subsystem requesting the LED update
+     * @param padIndex The pad index (0-9)
+     * @return true if this LED update should be rendered in PERF2 mode
+     */
+    private boolean shouldRenderLedInPerf2Mode(Page sourcePage, int padIndex) {
+        switch (sourcePage) {
+            case CLIP:
+                // CLIP mode controls pads 5-6 in PERF2 mode (mute/arm)
+                return (padIndex == 5 || padIndex == 6);
+            
+            case USER:
+                // USER mode controls pads 2-3 and 7-9 in PERF2 mode
+                return (padIndex == 2 || padIndex == 3) || (padIndex >= 7 && padIndex <= 9);
+            
+            case PERF2:
+                // PERF2 mode can update any pad (for focused clip, smart assistant, BWS track cycle, etc.)
                 return true;
             
             default:

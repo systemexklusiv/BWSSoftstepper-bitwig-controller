@@ -7,7 +7,7 @@ import de.davidrival.softstep.api.BaseConsolePrinter;
 import java.util.List;
 
 
-public class UserControlls extends BaseConsolePrinter implements HasControllsForPage {
+public class UserControls extends BaseConsolePrinter implements HasControllsForPage {
 
     private final Page page;
     private final ApiManager apiManager;
@@ -17,7 +17,7 @@ public class UserControlls extends BaseConsolePrinter implements HasControllsFor
     private final boolean[] toggleStates = new boolean[10];
     private final int[] incrementValues = new int[10];
 
-    public UserControlls(Page page, ApiManager apiManager, PadConfigurationManager padConfigManager) {
+    public UserControls(Page page, ApiManager apiManager, PadConfigurationManager padConfigManager) {
         super(apiManager.getHost());
         this.page = page;
         this.apiManager = apiManager;

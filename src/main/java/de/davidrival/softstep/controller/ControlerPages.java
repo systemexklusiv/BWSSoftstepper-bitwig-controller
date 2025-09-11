@@ -4,11 +4,11 @@ package de.davidrival.softstep.controller;
 import java.util.Arrays;
 import java.util.Optional;
 
-public class ControllerPages {
+public class ControlerPages {
 
     private Page currentPage;
 
-    public ControllerPages(Page startPage) {
+    public ControlerPages(Page startPage) {
         this.currentPage = startPage;
     }
 

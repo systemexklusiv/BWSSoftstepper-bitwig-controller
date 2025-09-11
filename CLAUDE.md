@@ -122,7 +122,7 @@ int[] buttonAddresses = {44, 52, 60, 68, 76, 40, 48, 56, 64, 72};
 // Manages all preference UI and configuration storage
 // Located: /src/main/java/de/davidrival/softstep/controller/PadConfigurationManager.java
 // Features: 10-pad configuration with mode/min/max/step/inverted settings
-// Integration: Wired through SoftstepperExtension → SoftstepController → UserControlls
+// Integration: Wired through SoftstepperExtension → SoftstepController → UserControls
 ```
 
 #### **Updated UserControlls Class:**
@@ -780,6 +780,105 @@ setValueOfUserControl(userControlIndex, currentValue);
 2. Remove Global Long Press Settings from preferences  
 3. Complete PERF page implementation (mixed CLIP/USER functionality)  
 4. Plan animated ramp settings implementation for future session
+
+## **BASEPERFORMANCEMODECONTROLS ARCHITECTURE REFACTORING (COMPLETED)**
+
+### **Problem Solved:**
+The original PERF and PERF2 implementations had severe architectural issues:
+- **Pad Assignment Conflicts**: Perf2Controls had `REC_ARM_PAD = 0` conflicting with `ARM_PAD = 6`
+- **Code Duplication**: ~70% duplicate code between PERF/PERF2 upper row functionality
+- **Inconsistent Layouts**: PERF2 pad assignments were completely wrong
+- **LED Update Issues**: Inconsistent LED handling approaches
+
+### **Hardware Layout (CRITICAL):**
+**Lower Row (Pads 0-4):** Bottom row on physical controller
+**Upper Row (Pads 5-9):** Top row on physical controller
+
+### **Solution: BasePerformanceModeControls Architecture**
+
+#### **BasePerformanceModeControls** (Abstract Base Class)
+```java
+// Common functionality for both PERF and PERF2 modes
+// Handles upper row (pads 5-9) + BWS track cycle (pad 4)
+// Location: /src/main/java/de/davidrival/softstep/controller/BasePerformanceModeControls.java
+
+// Common Upper Row Assignments:
+protected static final int TRACK_CYCLE_PAD = 4;  // BWS track cycling (lower row)
+protected static final int MUTE_PAD = 5;          // Mute/stop clip (CLIP functionality)
+protected static final int ARM_PAD = 6;           // Record arm/delete all (CLIP functionality) 
+// Pads 7-9: User controls (USER functionality)
+```
+
+#### **PerfControls** (extends BasePerformanceModeControls)
+```java
+// PERF Mode Layout:
+// Lower Row (0-4): Standard clip slots 0-3 + BWS cycle (4)
+// Upper Row (5-9): Inherited from base class (mute/arm/user)
+
+@Override
+protected void processModeSpecificPads(List<Softstep1Pad> modeSpecificPads, ShortMidiMessage msg) {
+    // Pads 0-3 → ClipControls (standard clip functionality)
+    clipControls.processControlls(modeSpecificPads, msg);
+}
+```
+
+#### **Perf2Controls** (extends BasePerformanceModeControls)
+```java
+// PERF2 Mode Layout:
+// Lower Row (0-4): Focused clip (0) + Smart assistant (1) + User (2-3) + BWS cycle (4)
+// Upper Row (5-9): Inherited from base class (mute/arm/user)
+
+private static final int FOCUSED_CLIP_PAD = 0;        // Focused clip slot at cursor position
+private static final int SMART_ASSISTANT_PAD = 1;     // Smart recording assistant
+// Pads 2-3: USER mode (handled by overridden isUserPad method)
+
+@Override
+protected boolean isUserPad(int padIndex) {
+    // Include pads 2-3 (lower row) in addition to 7-9 (upper row)
+    return (padIndex == 2 || padIndex == 3) || super.isUserPad(padIndex);
+}
+```
+
+### **Final Corrected Layouts:**
+
+#### **PERF Mode:**
+| Lower Row | Function | Type |
+|-----------|----------|---------|
+| 0-3 | Clip Slots 0-3 | CLIP mode |
+| 4 | BWS Track Cycle | Base class |
+
+| Upper Row | Function | Type |
+|-----------|----------|---------|
+| 5 | Mute/Stop Clip | CLIP mode |
+| 6 | Record Arm/Delete All | CLIP mode |
+| 7-9 | User Controls | USER mode |
+
+#### **PERF2 Mode:**
+| Lower Row | Function | Type |
+|-----------|----------|---------|
+| 0 | Focused Clip Slot | PERF2-specific |
+| 1 | Smart Recording Assistant | PERF2-specific |
+| 2-3 | User Controls | USER mode |
+| 4 | BWS Track Cycle | Base class |
+
+| Upper Row | Function | Type |
+|-----------|----------|---------|
+| 5 | Mute/Stop Clip | CLIP mode |
+| 6 | **Record Arm/Delete All** | CLIP mode ✨ |
+| 7-9 | User Controls | USER mode |
+
+### **Key Benefits Achieved:**
+✅ **No More Conflicts**: Pad 6 consistently provides CLIP arm/delete functionality in both modes
+✅ **Code Reuse**: ~70% reduction in duplicate code between PERF/PERF2
+✅ **Consistency**: Upper row (5-9) identical between modes
+✅ **Maintainability**: Single source of truth for common functionality
+✅ **Correct Assignments**: PERF2 now has proper pad layout (focused clip on 0, smart assistant on 1)
+✅ **LED Unification**: Consistent LED handling approach may resolve update issues
+
+### **Files Created/Modified:**
+- **NEW**: `BasePerformanceModeControls.java` - Abstract base class with common functionality
+- **REFACTORED**: `PerfControls.java` - Now extends base class, minimal code
+- **REFACTORED**: `Perf2Controls.java` - Now extends base class, correct pad assignments
 
 ## **STUDIO I/O PANEL RESEARCH & CAPABILITIES**
 

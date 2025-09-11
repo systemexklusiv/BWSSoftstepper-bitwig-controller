@@ -81,7 +81,7 @@ public class Gestures extends BaseConsolePrinter {
         // Analyze pressure from all 4 corners
         PressureProfile profile = new PressureProfile(dirs);
         
-        // Update current pressure for UserControlls
+        // Update current pressure for UserControls
         currentPressure = profile.maxCorner;
         
         // Update state machine and generate events

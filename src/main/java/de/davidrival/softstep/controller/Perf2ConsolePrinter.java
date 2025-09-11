@@ -13,29 +13,33 @@ import java.util.List;
  * PERF2 Mode - Smart Recording Workflow
  * 
  * This mode revolutionizes loop recording by providing intelligent clip slot management.
- * Instead of managing multiple clip slots manually, it focuses on a single "cursor" slot
- * with smart navigation and recording assistance.
+ * Hardware-oriented layout separates transport controls (lower row) from user controls (upper row).
  * 
- * Layout:
- * - Pad 0: Focused Clip Slot - always shows current cursor position with full clip functionality
- * - Pad 1: Smart Recording Assistant - context-aware actions (record/undo/advance/create scene)
- * - Pads 2-3: USER mode functionality (freed up from clip slots!)
- * - Pad 4: BWS Track Cycle (same as PERF mode)
- * - Pad 5: Track controls (same as PERF mode) 
- * - Pads 6-9: USER mode functionality (same as PERF mode)
+ * Layout (Hardware: Lower Row = Pads 0-4, Upper Row = Pads 5-9):
+ * Lower Row (Transport Controls):
+ * - Pad 0: Rec Arm / Long Press: Delete All Clips  
+ * - Pad 1: Mute / Long Press: Stop Playing Clip
+ * - Pad 2: Focused Clip Slot - cursor position with full clip functionality (moved from old Pad 0)
+ * - Pad 3: Smart Recording Assistant - context-aware actions (moved from old Pad 1)
+ * - Pad 4: BWS Track Cycle (unchanged)
+ * 
+ * Upper Row (User Controls):
+ * - Pads 5-9: USER mode functionality (expanded from old 2-3,6-9)
  * 
  * Smart Recording Workflow:
- * 1. Empty slot + Pad1 → Start recording (same as Pad0)
- * 2. Recording + Pad1 → Immediate undo (brilliant for "oops" moments)  
- * 3. Playing + Pad1 → Auto-advance to next free slot + start recording
- * 4. No free slots + Pad1 → Auto-create scene + select + start recording
+ * 1. Empty slot + Pad3 → Start recording (same as Pad2)
+ * 2. Recording + Pad3 → Immediate undo (brilliant for "oops" moments)  
+ * 3. Playing + Pad3 → Auto-advance to next free slot + start recording
+ * 4. No free slots + Pad3 → Auto-create scene + select + start recording
  */
 public class Perf2ConsolePrinter extends BaseConsolePrinter implements HasControllsForPage, BwsTrackDiscoveryService.LedUpdateCallback {
     
-    // Pad assignments for PERF2 mode
-    private static final int FOCUSED_CLIP_PAD = 0;        // Pad0: Current cursor clip slot
-    private static final int SMART_ASSISTANT_PAD = 1;     // Pad1: Smart recording assistant  
-    private static final int TRACK_CYCLE_PAD = 4;         // Pad4: BWS track cycling (same as PERF)
+    // Pad assignments for PERF2 mode (NEW LAYOUT)
+    private static final int REC_ARM_PAD = 0;             // Pad0: Rec Arm / Long Press: Delete All Clips
+    private static final int MUTE_PAD = 1;                // Pad1: Mute / Long Press: Stop Playing Clip  
+    private static final int FOCUSED_CLIP_PAD = 2;        // Pad2: Current cursor clip slot (moved from old Pad0)
+    private static final int SMART_ASSISTANT_PAD = 3;     // Pad3: Smart recording assistant (moved from old Pad1)
+    private static final int TRACK_CYCLE_PAD = 4;         // Pad4: BWS track cycling (unchanged)
     
     private final Page page;
     private final ApiManager apiManager;
@@ -86,6 +90,9 @@ public class Perf2ConsolePrinter extends BaseConsolePrinter implements HasContro
             DebugLogger.perf2(apiManager.getHost(), padConfigManager, "PERF2: BWS LED callback registered");
         }
         
+        // Set up track arm observation for Pad 6 LED feedback
+        setupTrackArmObserver();
+        
         // Set up clip slot observation for LED feedback
         setupClipSlotObservers();
         
@@ -116,31 +123,45 @@ public class Perf2ConsolePrinter extends BaseConsolePrinter implements HasContro
         DebugLogger.perf2(apiManager.getHost(), padConfigManager, String.format("PERF2: Processing %d pads", pushedDownPads.size()));
         
         // Split pads into different functional groups
+        List<Softstep1Pad> recArmPads = new ArrayList<>();
+        List<Softstep1Pad> mutePads = new ArrayList<>();
         List<Softstep1Pad> focusedClipPads = new ArrayList<>();
         List<Softstep1Pad> smartAssistantPads = new ArrayList<>();
         List<Softstep1Pad> userPads = new ArrayList<>();
-        List<Softstep1Pad> clipPads = new ArrayList<>();
         List<Softstep1Pad> trackCyclePads = new ArrayList<>();
+        List<Softstep1Pad> clipArmPads = new ArrayList<>();  // For Pad 6 - CLIP arm/delete functionality
         
         for (Softstep1Pad pad : pushedDownPads) {
             int padIndex = pad.getNumber();
             
-            if (padIndex == FOCUSED_CLIP_PAD) {
+            if (padIndex == REC_ARM_PAD) {
+                recArmPads.add(pad);
+            } else if (padIndex == MUTE_PAD) {
+                mutePads.add(pad);
+            } else if (padIndex == FOCUSED_CLIP_PAD) {
                 focusedClipPads.add(pad);
             } else if (padIndex == SMART_ASSISTANT_PAD) {
                 smartAssistantPads.add(pad);
             } else if (padIndex == TRACK_CYCLE_PAD) {
                 trackCyclePads.add(pad);
-            } else if (padIndex == 5) {
-                // Pad 5: Track controls (mute/arm) - use CLIP functionality
-                clipPads.add(pad);
+            } else if (padIndex == Page.PAD_INDICES.ARM_PAD) {  // Pad 6
+                // Pad 6: CLIP arm/delete functionality (like CLIP mode)
+                clipArmPads.add(pad);
             } else if (isUserPad(padIndex)) {
-                // Pads 2-3, 6-9: USER mode functionality
+                // Pads 5, 7-9: USER mode functionality
                 userPads.add(pad);
             }
         }
         
         // Route to appropriate handlers
+        if (!recArmPads.isEmpty()) {
+            processRecArmPads(recArmPads, msg);
+        }
+        
+        if (!mutePads.isEmpty()) {
+            processMutePads(mutePads, msg);
+        }
+        
         if (!focusedClipPads.isEmpty()) {
             processFocusedClipPads(focusedClipPads, msg);
         }
@@ -153,17 +174,76 @@ public class Perf2ConsolePrinter extends BaseConsolePrinter implements HasContro
             userControls.processControlls(userPads, msg);
         }
         
-        if (!clipPads.isEmpty()) {
-            clipControls.processControlls(clipPads, msg);
-        }
-        
         if (!trackCyclePads.isEmpty()) {
             processTrackCyclePads(trackCyclePads, msg);
+        }
+        
+        if (!clipArmPads.isEmpty()) {
+            // Route Pad 6 to ClipControls for arm/delete functionality
+            clipControls.processControlls(clipArmPads, msg);
         }
     }
     
     /**
-     * Processes Pad0 - Focused Clip Slot functionality.
+     * Processes Pad0 - Rec Arm functionality.
+     * Normal press: Toggle record arm
+     * Long press: Delete all clips in bank
+     */
+    private void processRecArmPads(List<Softstep1Pad> recArmPads, ShortMidiMessage msg) {
+        for (Softstep1Pad pad : recArmPads) {
+            Gestures gestures = pad.gestures();
+            
+            if (gestures.getPressure() > 0 || gestures.isFootOn() || gestures.isFootOff()) {
+                DebugLogger.perf2(apiManager.getHost(), padConfigManager, String.format(
+                    "PERF2: Processing Rec Arm PAD%d (pressure: %d, footOn: %s, footOff: %s, longPress: %s)", 
+                    pad.getNumber(), gestures.getPressure(), gestures.isFootOn(), gestures.isFootOff(), gestures.isLongPress()));
+            }
+            
+            if (gestures.isLongPress()) {
+                // Long press: Delete all clips
+                apiManager.getApiToHost().deleteAllSlots();
+                DebugLogger.perf2(apiManager.getHost(), padConfigManager, "PERF2: Rec Arm long press - Deleted all clips in bank");
+                pad.notifyControlConsumed();
+            } else if (gestures.isFootOn()) {
+                // Normal press: Toggle record arm
+                cursorTrack.arm().toggle();
+                DebugLogger.perf2(apiManager.getHost(), padConfigManager, "PERF2: Toggled record arm");
+                pad.notifyControlConsumed();
+            }
+        }
+    }
+    
+    /**
+     * Processes Pad1 - Mute functionality.
+     * Normal press: Toggle track mute
+     * Long press: Stop playing clip
+     */
+    private void processMutePads(List<Softstep1Pad> mutePads, ShortMidiMessage msg) {
+        for (Softstep1Pad pad : mutePads) {
+            Gestures gestures = pad.gestures();
+            
+            if (gestures.getPressure() > 0 || gestures.isFootOn() || gestures.isFootOff()) {
+                DebugLogger.perf2(apiManager.getHost(), padConfigManager, String.format(
+                    "PERF2: Processing Mute PAD%d (pressure: %d, footOn: %s, footOff: %s, longPress: %s)", 
+                    pad.getNumber(), gestures.getPressure(), gestures.isFootOn(), gestures.isFootOff(), gestures.isLongPress()));
+            }
+            
+            if (gestures.isLongPress()) {
+                // Long press: Stop playing clip
+                cursorTrack.stop();
+                DebugLogger.perf2(apiManager.getHost(), padConfigManager, "PERF2: Mute long press - Stopped playing clip");
+                pad.notifyControlConsumed();
+            } else if (gestures.isFootOn()) {
+                // Normal press: Toggle mute
+                cursorTrack.mute().toggle();
+                DebugLogger.perf2(apiManager.getHost(), padConfigManager, "PERF2: Toggled track mute");
+                pad.notifyControlConsumed();
+            }
+        }
+    }
+    
+    /**
+     * Processes Pad2 - Focused Clip Slot functionality (moved from old Pad0).
      * This pad always represents the current cursor position and behaves like a standard clip slot.
      */
     private void processFocusedClipPads(List<Softstep1Pad> focusedClipPads, ShortMidiMessage msg) {
@@ -600,10 +680,10 @@ public class Perf2ConsolePrinter extends BaseConsolePrinter implements HasContro
     
     /**
      * Determines if a pad should use USER mode functionality in PERF2 mode.
-     * USER pads in PERF2: 2, 3, 6, 7, 8, 9
+     * USER pads in PERF2: 5, 7, 8, 9 (upper row - Pad 6 now uses CLIP arm/delete functionality)
      */
     private boolean isUserPad(int padIndex) {
-        return (padIndex == 2 || padIndex == 3) || (padIndex >= 6 && padIndex <= 9);
+        return (padIndex == 5) || (padIndex >= 7 && padIndex <= 9);
     }
     
     /**
@@ -629,5 +709,26 @@ public class Perf2ConsolePrinter extends BaseConsolePrinter implements HasContro
         DebugLogger.perf2(apiManager.getHost(), padConfigManager, String.format(
             "PERF2: BWS LED Callback - Updated PAD%d to show BWS:%d state (%s)", 
             TRACK_CYCLE_PAD, bwsSlot, ledState.toString()));
+    }
+    
+    /**
+     * Sets up track arm observation for Pad 6 LED feedback in PERF2 mode.
+     * This ensures Pad 6 shows the correct arm/disarm state when used for CLIP arm functionality.
+     * Note: Uses CLIP page for LED updates since Pad 6 now uses CLIP arm functionality.
+     */
+    private void setupTrackArmObserver() {
+        cursorTrack.arm().addValueObserver(armed -> {
+            LedStates ledState = armed ? Page.CHANNEL_LED_STATES.ARMED : Page.CHANNEL_LED_STATES.UNARMED;
+            
+            // Store the LED state in the CLIP page system since Pad 6 now uses CLIP functionality
+            // This ensures the LED state is preserved during mode switching
+            apiManager.getSoftstepController().updateLedStatesForPerfMode(Page.CLIP, Page.PAD_INDICES.ARM_PAD, ledState);
+            
+            DebugLogger.perf2(apiManager.getHost(), padConfigManager, String.format(
+                "PERF2: Updated Pad 6 Arm LED (via CLIP page) - armed: %s → %s", 
+                armed, ledState.toString()));
+        });
+        
+        cursorTrack.arm().markInterested();
     }
 }
